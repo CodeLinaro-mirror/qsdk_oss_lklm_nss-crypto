@@ -99,13 +99,27 @@ static int nss_crypto_probe(struct platform_device *pdev)
 {
 	struct nss_crypto_ctrl_eng *e_ctrl;
 	struct nss_crypto_platform_data *res;
+	struct nss_crypto_ctrl_eng *eng_ptr;
 	int status = 0;
+	size_t old_sz;
+	size_t new_sz;
 
-	nss_crypto_info("probing engine - %d\n", eng_count);
+	nss_crypto_info_always("probing engine - %d\n", eng_count);
 	nss_crypto_assert(eng_count < NSS_CRYPTO_MAX_ENGINES);
 
-	e_ctrl = &gbl_crypto_ctrl.eng[eng_count];
+	eng_ptr = gbl_crypto_ctrl.eng;
 
+	old_sz = (gbl_crypto_ctrl.num_eng * sizeof(struct nss_crypto_ctrl_eng));
+	new_sz = old_sz + sizeof(struct nss_crypto_ctrl_eng);
+
+	eng_ptr = nss_crypto_mem_realloc(eng_ptr, old_sz, new_sz);
+	if (eng_ptr == NULL) {
+		return -ENOMEM;
+	}
+
+	gbl_crypto_ctrl.eng = eng_ptr;
+
+	e_ctrl = &gbl_crypto_ctrl.eng[eng_count];
 	e_ctrl->dev = &pdev->dev;
 
 	/* crypto engine resources */
@@ -185,7 +199,7 @@ void nss_crypto_delayed_init(struct work_struct *work)
 
 	ctrl = container_of(to_delayed_work(work), struct nss_crypto_ctrl, crypto_work);
 
-	nss_crypto_info("Register with NSS driver-\n");
+	nss_crypto_info_always(".");
 
 	/*
 	 * check if NSS FW is initialized
@@ -195,7 +209,7 @@ void nss_crypto_delayed_init(struct work_struct *work)
 		return;
 	}
 
-	nss_crypto_info("Done\n");
+	nss_crypto_info_always("Done\n");
 
 	/*
 	 * reserve the index if certain pipe pairs are locked out for
@@ -233,6 +247,8 @@ static int __init nss_crypto_module_init(void)
 	iowrite32(0, CRYPTO_RESET_AHB);
 
 	nss_crypto_init();
+
+	nss_crypto_info_always("Register with NSS driver-\n");
 
 	INIT_DELAYED_WORK(&gbl_crypto_ctrl.crypto_work, nss_crypto_delayed_init);
 

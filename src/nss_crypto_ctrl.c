@@ -53,6 +53,52 @@ static const uint8_t null_ckey[NSS_CRYPTO_CKEY_SZ] = {0};
 static const uint8_t null_akey[NSS_CRYPTO_AKEY_SZ] = {0};
 
 /*
+ * nss_crypto_mem_realloc
+ * 	Allocate the memory to accommodate present & previous instances.
+ * 	If instance is not present earlier then the memory will be allocated
+ * 	for the same.
+ *
+ * 	NOTE: Older memory will be freed up and this shall not be called
+ * 	from atomic context.
+ */
+void *nss_crypto_mem_realloc(void *src, size_t src_len, size_t dst_len)
+{
+	void *dst = NULL;
+
+	/*
+	 * Allocate the memory to accommodate present & previous
+	 * instances
+	 *
+	 * NOTE: Currently it is assumed that the memory requirements
+	 * can be addressed by contiguos allocations
+	 */
+	dst = kzalloc(dst_len, GFP_KERNEL);
+	if (dst == NULL) {
+		nss_crypto_err("Unable to allocate memory\n");
+		return NULL;
+	}
+
+	/*
+	 * Check if it is first allocation
+	 */
+	if ((src == NULL) || (src_len == 0)) {
+		return dst;
+	}
+
+	/*
+	 * Copy the earlier allocated memory to newly allocated memory
+	 */
+	memcpy(dst, src, src_len);
+
+	/*
+	 * Free_up the earlier allocation
+	 */
+	kfree(src);
+
+	return dst;
+}
+
+/*
  * nss_crypto_write_cblk()
  * 	load CMD block with data
  *
@@ -341,7 +387,7 @@ void nss_crypto_pipe_init(struct nss_crypto_ctrl_eng *eng, uint32_t idx, uint32_
 		desc->out[i].results.data_len = NSS_CRYPTO_RESULTS_SZ;
 	}
 
-	nss_crypto_info("init completed for Pipe Pair[%d]\n", idx);
+	nss_crypto_info_always("init completed for Pipe Pair[%d]\n", idx);
 	nss_crypto_dbg("total size - %d, qdepth - %d, in_sz - %d, out_sz - %d\n",
 			NSS_CRYPTO_DESC_SZ, NSS_CRYPTO_MAX_QDEPTH,
 			in_pipe_sz, out_pipe_sz);
@@ -807,7 +853,7 @@ nss_crypto_status_t nss_crypto_session_alloc(nss_crypto_handle_t crypto, struct 
 
 	*session_idx = idx;
 
-	nss_crypto_reset_session(idx, NSS_CRYPTO_SESSION_STATE_ALLOC);
+	nss_crypto_reset_session(idx, NSS_CRYPTO_SESSION_STATE_ACTIVE);
 
 	spin_unlock_bh(&ctrl->lock); /* index unlock*/
 
