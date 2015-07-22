@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -27,7 +27,11 @@
 #include <linux/dma-mapping.h>
 #include <linux/platform_device.h>
 #include <mach/msm_iomap.h>
-#include <mach/msm_nss_crypto.h>
+#include <linux/of.h>
+#include <linux/of_net.h>
+#include <linux/of_irq.h>
+#include <linux/of_platform.h>
+#include <linux/of_address.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/vmalloc.h>
@@ -39,34 +43,27 @@
 #include <nss_crypto_ctrl.h>
 #include <nss_crypto_dbg.h>
 
-#define REG(off)	(MSM_CLK_CTL_BASE + (off))
-#define REG_GCC(off)	(MSM_APCS_GCC_BASE + (off))
-
-#define CRYPTO_RESET_ENG(n)	REG(0x3E00 + (n * 0x4))
-#define CRYPTO_RESET_AHB	REG(0x3E10)
-
-#define CRYPTO_RESET_ENG_0	REG(0x3E00)
-#define CRYPTO_RESET_ENG_1	REG(0x3E04)
-#define CRYPTO_RESET_ENG_2	REG(0x3E08)
-#define CRYPTO_RESET_ENG_3	REG(0x3E0C)
-
 /* Poll time in ms */
 #define CRYPTO_DELAYED_INIT_TIME	100
+
+/* Crypto resource index in device tree */
+enum nss_crypto_dt_res {
+	NSS_CRYPTO_DT_CRYPTO_RES = 0,
+	NSS_CRYPTO_DT_BAM_RES = 1,
+	NSS_CRYPTO_DT_MAX_RES
+};
 
 extern struct nss_crypto_ctrl gbl_crypto_ctrl;
 extern struct nss_ctx_instance *nss_drv_hdl;
 
-static int eng_count = 0;
-static int res_idx = 0;
-module_param(res_idx, int, 0);
-MODULE_PARM_DESC(res_idx, "reserve indexes");
+static int eng_count;
 
 void nss_crypto_engine_init(uint32_t eng_count);
 void nss_crypto_init(void);
 
 /*
  * nss_crypto_bam_init()
- * 	initialize the BAM for the given engine
+ *	initialize the BAM for the given engine
  */
 static void nss_crypto_bam_init(uint8_t *bam_iobase)
 {
@@ -93,22 +90,56 @@ static void nss_crypto_bam_init(uint8_t *bam_iobase)
 
 /*
  * nss_crypto_probe()
- * 	probe routine called per engine from MACH-MSM
+ *	probe routine called per engine from MACH-MSM
  */
 static int nss_crypto_probe(struct platform_device *pdev)
 {
 	struct nss_crypto_ctrl_eng *e_ctrl;
-	struct nss_crypto_platform_data *res;
+	struct device_node *np;
 	struct nss_crypto_ctrl_eng *eng_ptr;
-	int status = 0;
+	struct resource crypto_res = {0};
+	struct resource bam_res = {0};
+	uint32_t bam_ee = 0;
 	size_t old_sz;
 	size_t new_sz;
 
 	nss_crypto_info_always("probing engine - %d\n", eng_count);
 	nss_crypto_assert(eng_count < NSS_CRYPTO_MAX_ENGINES);
 
-	eng_ptr = gbl_crypto_ctrl.eng;
+	if (!pdev->dev.of_node) {
+		nss_crypto_info_always("%sError Accessing dev node\n", __func__);
+		return -ENODEV;
+	}
 
+	/* crypto engine resources */
+	nss_crypto_info_always("Device Tree node found\n");
+	np = of_node_get(pdev->dev.of_node);
+
+	/*
+	 * Crypto Registers
+	 */
+	if (of_address_to_resource(np, NSS_CRYPTO_DT_CRYPTO_RES, &crypto_res) != 0) {
+		nss_crypto_err("Error in retreiving crypto_base\n");
+		return -EINVAL;
+	}
+
+	/*
+	 * BAM Registers
+	 */
+	if (of_address_to_resource(np, NSS_CRYPTO_DT_BAM_RES, &bam_res) != 0) {
+		nss_crypto_err("Error in retreiving bam_base\n");
+		return -EINVAL;
+	}
+
+	/*
+	 * BAM Execution Environment
+	 */
+	if (of_property_read_u32(np, "qcom,ee", &bam_ee)) {
+		nss_crypto_err("Error retreiving crypto EE for engine(%d)\n", eng_count);
+		return -EINVAL;
+	}
+
+	eng_ptr = gbl_crypto_ctrl.eng;
 	old_sz = (gbl_crypto_ctrl.num_eng * sizeof(struct nss_crypto_ctrl_eng));
 	new_sz = old_sz + sizeof(struct nss_crypto_ctrl_eng);
 
@@ -122,19 +153,15 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	e_ctrl = &gbl_crypto_ctrl.eng[eng_count];
 	e_ctrl->dev = &pdev->dev;
 
-	/* crypto engine resources */
-	res = dev_get_platdata(e_ctrl->dev);
-	nss_crypto_assert(res);
-
-	e_ctrl->bam_ee = res->bam_ee;
-
-	e_ctrl->cmd_base = res->crypto_pbase;
-	e_ctrl->crypto_base = ioremap_nocache(res->crypto_pbase, res->crypto_pbase_sz);
+	e_ctrl->cmd_base = crypto_res.start;
+	e_ctrl->crypto_base = ioremap_nocache(e_ctrl->cmd_base, resource_size(&crypto_res));
 	nss_crypto_assert(e_ctrl->crypto_base);
 
-	e_ctrl->bam_pbase = res->bam_pbase;
-	e_ctrl->bam_base = ioremap_nocache(res->bam_pbase, res->bam_pbase_sz);
+	e_ctrl->bam_pbase = bam_res.start;
+	e_ctrl->bam_base = ioremap_nocache(e_ctrl->bam_pbase, resource_size(&bam_res));
 	nss_crypto_assert(e_ctrl->bam_base);
+
+	e_ctrl->bam_ee = bam_ee;
 
 	/*
 	 * Link address of engine ctrl
@@ -150,12 +177,12 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	eng_count++;
 	gbl_crypto_ctrl.num_eng = eng_count;
 
-	return status;
+	return 0;
 }
 
 /*
  * nss_crypto_remove()
- * 	remove the crypto engine and deregister everything
+ *	remove the crypto engine and deregister everything
  */
 static int nss_crypto_remove(struct platform_device *pdev)
 {
@@ -163,11 +190,14 @@ static int nss_crypto_remove(struct platform_device *pdev)
 
 	ctrl = platform_get_drvdata(pdev);
 
-	/**
-	 * XXX: pipe deinit goes here
-	 */
 	return 0;
 };
+
+static struct of_device_id nss_crypto_dt_ids[] = {
+	{ .compatible =  "qcom,nss-crypto" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, nss_crypto_dt_ids);
 
 /*
  * platform device instance
@@ -176,30 +206,22 @@ static struct platform_driver nss_crypto_drv = {
 	.probe  	= nss_crypto_probe,
 	.remove 	= nss_crypto_remove,
 	.driver 	= {
-		.owner  = THIS_MODULE,
-		.name   = "nss-crypto",
+		.owner	= THIS_MODULE,
+		.name	= "nss-crypto",
+		.of_match_table = of_match_ptr(nss_crypto_dt_ids),
 	},
 };
 
 /*
- * nss_crypto_module_exit()
- * 	module exit for crypto driver
+ * nss_crypto_delayed_init
+ * 	delayed sequence to initialize crypto after NSS FW is initialized
  */
-static void __exit nss_crypto_module_exit(void)
-{
-	nss_crypto_info("module unloaded (IPQ806x)\n");
-
-	platform_driver_unregister(&nss_crypto_drv);
-}
-
 void nss_crypto_delayed_init(struct work_struct *work)
 {
 	struct nss_crypto_ctrl *ctrl;
 	uint32_t status = 0;
 
 	ctrl = container_of(to_delayed_work(work), struct nss_crypto_ctrl, crypto_work);
-
-	nss_crypto_info_always(".");
 
 	/*
 	 * check if NSS FW is initialized
@@ -209,42 +231,29 @@ void nss_crypto_delayed_init(struct work_struct *work)
 		return;
 	}
 
-	nss_crypto_info_always("Done\n");
+	nss_crypto_info_always("NSS Firmware initialized\n");
 
 	/*
 	 * reserve the index if certain pipe pairs are locked out for
 	 * trust zone use
 	 */
-	ctrl->idx_bitmap = res_idx ? ((0x1 << res_idx) - 1) : 0;
+	ctrl->idx_bitmap = 0;
 
 	status = platform_driver_register(&nss_crypto_drv);
 	if (status != 0) {
 		nss_crypto_err("unable to register the driver : %d\n", status);
 		return;
 	}
-
 }
 
 /*
  * nss_crypto_module_init()
- * 	module init for crypto driver
+ *	module init for crypto driver
  */
 static int __init nss_crypto_module_init(void)
 {
 
 	nss_crypto_info("module loaded (platform - IPQ806x, build - %s:%s)\n", __DATE__, __TIME__);
-
-	/* nss_crypto_debugfs = debugfs_create_dir("nss_crypto", NULL); */
-
-	/*
-	 * bring the crypto out of reset
-	 */
-	iowrite32(0, CRYPTO_RESET_ENG(0));
-	iowrite32(0, CRYPTO_RESET_ENG(1));
-	iowrite32(0, CRYPTO_RESET_ENG(2));
-	iowrite32(0, CRYPTO_RESET_ENG(3));
-
-	iowrite32(0, CRYPTO_RESET_AHB);
 
 	nss_crypto_init();
 
@@ -257,9 +266,19 @@ static int __init nss_crypto_module_init(void)
 	return 0;
 }
 
+/*
+ * nss_crypto_module_exit()
+ *	module exit for crypto driver
+ */
+static void __exit nss_crypto_module_exit(void)
+{
+	nss_crypto_info("module unloaded (IPQ806x)\n");
+
+	platform_driver_unregister(&nss_crypto_drv);
+}
+
 module_init(nss_crypto_module_init);
 module_exit(nss_crypto_module_exit);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("QCA NSS Crypto driver");
-MODULE_AUTHOR("Qualcomm Atheros Inc");
