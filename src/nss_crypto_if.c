@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2015, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -37,7 +37,8 @@
 extern struct nss_crypto_ctrl gbl_crypto_ctrl;
 
 struct nss_ctx_instance *nss_drv_hdl;
-void *nss_pm_hdl;
+
+struct nss_crypto_drv_ctx gbl_ctx = {0};
 
 /*
  * internal structure for a buffer node
@@ -250,7 +251,6 @@ void nss_crypto_transform_done(void *app_data __attribute((unused)), void *buffe
  */
 static void nss_crypto_copy_stats(void *dst, void *src)
 {
-
 	memcpy(dst, src, sizeof(struct nss_crypto_stats));
 }
 
@@ -372,16 +372,9 @@ EXPORT_SYMBOL(nss_crypto_transform_payload);
  */
 void nss_crypto_init(void)
 {
-	nss_pm_interface_status_t status;
-
 	nss_crypto_ctrl_init();
 
-	nss_pm_hdl = nss_pm_client_register(NSS_PM_CLIENT_CRYPTO);
-
-	status = nss_pm_set_perf_level(nss_pm_hdl, NSS_PM_PERF_LEVEL_TURBO);
-	if (status == NSS_PM_API_FAILED) {
-		nss_crypto_info(" Not able to set pm perf level to TURBO!!!\n");
-	}
+	gbl_ctx.pm_hdl = nss_pm_client_register(NSS_PM_CLIENT_CRYPTO);
 
 	/*
 	 * Initialize debugfs entries
@@ -444,11 +437,6 @@ void nss_crypto_engine_init(uint32_t eng_num)
 		nss_crypto_err("Failed to send the message to NSS\n");
 		return;
 	}
-
-	/*
-	 * Create debufs information of the engine
-	 */
-	nss_crypto_debugfs_add_engine(ctrl, eng_num);
 }
 
 /*

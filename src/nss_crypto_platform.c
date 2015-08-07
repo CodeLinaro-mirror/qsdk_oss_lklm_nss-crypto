@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013,2015, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,6 +38,7 @@
 #include <nss_crypto_hw.h>
 #include <nss_crypto_ctrl.h>
 #include <nss_crypto_dbg.h>
+#include <nss_crypto_debugfs.h>
 
 #define REG(off)	(MSM_CLK_CTL_BASE + (off))
 #define REG_GCC(off)	(MSM_APCS_GCC_BASE + (off))
@@ -56,10 +57,7 @@
 extern struct nss_crypto_ctrl gbl_crypto_ctrl;
 extern struct nss_ctx_instance *nss_drv_hdl;
 
-static int eng_count = 0;
-static int res_idx = 0;
-module_param(res_idx, int, 0);
-MODULE_PARM_DESC(res_idx, "reserve indexes");
+static int eng_count;
 
 void nss_crypto_engine_init(uint32_t eng_count);
 void nss_crypto_init(void);
@@ -196,10 +194,9 @@ void nss_crypto_delayed_init(struct work_struct *work)
 {
 	struct nss_crypto_ctrl *ctrl;
 	uint32_t status = 0;
+	uint32_t i = 0;
 
 	ctrl = container_of(to_delayed_work(work), struct nss_crypto_ctrl, crypto_work);
-
-	nss_crypto_info_always(".");
 
 	/*
 	 * check if NSS FW is initialized
@@ -209,13 +206,13 @@ void nss_crypto_delayed_init(struct work_struct *work)
 		return;
 	}
 
-	nss_crypto_info_always("Done\n");
+	nss_crypto_info_always("NSS Firmware initialized\n");
 
 	/*
 	 * reserve the index if certain pipe pairs are locked out for
 	 * trust zone use
 	 */
-	ctrl->idx_bitmap = res_idx ? ((0x1 << res_idx) - 1) : 0;
+	ctrl->idx_bitmap = 0;
 
 	status = platform_driver_register(&nss_crypto_drv);
 	if (status != 0) {
@@ -223,6 +220,11 @@ void nss_crypto_delayed_init(struct work_struct *work)
 		return;
 	}
 
+	/*
+	 * Initialize the engine stats
+	 */
+	for (i = 0; i < gbl_crypto_ctrl.num_eng ; i++)
+		nss_crypto_debugfs_add_engine(ctrl, i);
 }
 
 /*
@@ -233,8 +235,6 @@ static int __init nss_crypto_module_init(void)
 {
 
 	nss_crypto_info("module loaded (platform - IPQ806x, build - %s:%s)\n", __DATE__, __TIME__);
-
-	/* nss_crypto_debugfs = debugfs_create_dir("nss_crypto", NULL); */
 
 	/*
 	 * bring the crypto out of reset
