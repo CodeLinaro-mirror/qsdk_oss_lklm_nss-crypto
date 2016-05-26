@@ -28,7 +28,6 @@
 #include <linux/timer.h>
 #include <linux/random.h>
 #include <linux/skbuff.h>
-#include <asm/scatterlist.h>
 #include <linux/moduleparam.h>
 #include <linux/spinlock.h>
 #include <asm/cmpxchg.h>
