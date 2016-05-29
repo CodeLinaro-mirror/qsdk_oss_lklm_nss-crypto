@@ -50,6 +50,10 @@
 /* Crypto turbo clock frequency */
 #define NSS_CRYPTO_CLOCK_TURBO_FREQ	2132000000
 
+static bool crypto_clk_turbo;
+module_param(crypto_clk_turbo, bool, S_IRUGO);
+MODULE_PARM_DESC(crypto_clk_turbo, "Enable Turbo clock for Crypto");
+
 /* Crypto resource index in device tree */
 enum nss_crypto_dt_res {
 	NSS_CRYPTO_DT_CRYPTO_RES = 0,
@@ -99,8 +103,8 @@ static void nss_crypto_bam_init(uint8_t *bam_iobase)
  */
 static int nss_crypto_clock_init(struct platform_device *pdev, struct device_node *np)
 {
-	struct clk *clk;
 	const char *clk_string;
+	struct clk *clk;
 	int count, i;
 
 	count = of_property_count_strings(np, "clock-names");
@@ -116,10 +120,12 @@ static int nss_crypto_clock_init(struct platform_device *pdev, struct device_nod
 		BUG_ON(!clk);
 
 		clk_prepare_enable(clk);
-		if (clk_set_rate(clk, NSS_CRYPTO_CLOCK_TURBO_FREQ)) {
+
+		if (crypto_clk_turbo && clk_set_rate(clk, NSS_CRYPTO_CLOCK_TURBO_FREQ)) {
 			nss_crypto_err("%p:Error in setting %s clock to turbo freq\n", pdev, clk_string);
 		}
 	}
+
 	return 0;
 }
 
