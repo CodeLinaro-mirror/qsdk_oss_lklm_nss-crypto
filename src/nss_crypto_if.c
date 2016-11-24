@@ -409,7 +409,6 @@ void nss_crypto_msg_sync_cb(void *app_data, struct nss_crypto_msg *nim)
 nss_crypto_status_t nss_crypto_send_msg_sync(struct nss_crypto_msg *nim, enum nss_crypto_msg_type type)
 {
 	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
-	nss_crypto_status_t status = NSS_CRYPTO_STATUS_OK;
 	int ret;
 
 	/*
@@ -449,7 +448,7 @@ nss_crypto_status_t nss_crypto_send_msg_sync(struct nss_crypto_msg *nim, enum ns
 	}
 
 	up(&ctrl->sem);
-	return status;
+	return NSS_CRYPTO_STATUS_OK;
 
 fail:
 	up(&ctrl->sem);
@@ -625,11 +624,10 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 	}
 
 	/*
-	 * If NSS state has changed to free, start the delayed free
-	 * timer for de-allocating session resources
+	 * If NSS state has changed to free. Delete session resources
 	 */
 	if (session->state == NSS_CRYPTO_SESSION_STATE_FREE) {
-		nss_crypto_start_idx_free(session->idx);
+		nss_crypto_idx_free(session->idx);
 	}
 
 	return status;

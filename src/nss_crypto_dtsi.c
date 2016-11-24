@@ -124,7 +124,7 @@ bool nss_crypto_pm_event_cb(void *app_data, bool turbo, bool auto_scale)
 	count = ctrl->max_clocks;
 
 	spin_lock_bh(&ctrl->lock); /* index lock*/
-	session = !!ctrl->idx_bitmap;
+	session = !bitmap_empty(ctrl->idx_bitmap, NSS_CRYPTO_MAX_IDXS);
 	spin_unlock_bh(&ctrl->lock); /* index unlock */
 
 	/*
@@ -407,7 +407,7 @@ void nss_crypto_delayed_init(struct work_struct *work)
 	 * reserve the index if certain pipe pairs are locked out for
 	 * trust zone use
 	 */
-	ctrl->idx_bitmap = 0;
+	memset(ctrl->idx_bitmap, 0, sizeof(ctrl->idx_bitmap));
 
 	status = platform_driver_register(&nss_crypto_drv);
 	if (status) {
