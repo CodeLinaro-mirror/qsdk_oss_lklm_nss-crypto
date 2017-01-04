@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -593,7 +593,8 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 	}
 
 	switch (algo) {
-	case NSS_CRYPTO_CIPHER_AES:
+	case NSS_CRYPTO_CIPHER_AES_CBC:
+	case NSS_CRYPTO_CIPHER_AES_CTR:
 		iv_len = NSS_CRYPTO_MAX_IVLEN_AES;
 		break;
 
