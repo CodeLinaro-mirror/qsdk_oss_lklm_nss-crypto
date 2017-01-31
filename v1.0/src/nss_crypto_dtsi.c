@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2015-2017 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -329,7 +329,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	 */
 	nss_crypto_bam_init(e_ctrl->bam_base);
 
-	if (nss_crypto_engine_init(eng_count) != NSS_CRYPTO_STATUS_OK) {
+	if (nss_crypto_engine_init(eng_count)) {
 		nss_crypto_info_always("Error in Engine Init\n");
 		nss_crypto_reset_state(&gbl_crypto_ctrl);
 		return -ENOMEM;

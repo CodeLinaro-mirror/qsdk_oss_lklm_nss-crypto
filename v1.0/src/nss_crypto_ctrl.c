@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2015-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -654,18 +654,16 @@ static nss_crypto_status_t nss_crypto_validate_auth(struct nss_crypto_key *auth,
  *
  */
 static void nss_crypto_key_update(struct nss_crypto_ctrl_eng *eng, uint32_t idx, struct nss_crypto_encr_cfg *encr_cfg,
-					struct nss_crypto_auth_cfg *auth_cfg)
+					struct nss_crypto_auth_cfg *auth_cfg, int eng_num)
 {
-	const uint32_t size = sizeof(struct nss_crypto_cmd_block);
 	struct nss_crypto_ctrl_idx *ctrl_idx;
-	struct nss_crypto_cmd_block *cblk;
 	uint16_t pp_num;
 	uint32_t paddr;
+	size_t size;
 	int i = 0;
 
 	ctrl_idx = &eng->idx_tbl[idx];
 	pp_num = ctrl_idx->idx.pp_num;
-	cblk = ctrl_idx->cblk;
 
 #if !defined(CONFIG_NSS_CRYPTO_FORCE_UNCACHE)
 	/*
@@ -681,40 +679,43 @@ static void nss_crypto_key_update(struct nss_crypto_ctrl_eng *eng, uint32_t idx,
 	}
 #endif
 
-	paddr = ctrl_idx->idx.cblk_paddr;
-
-	dma_unmap_single(eng->dev, paddr, size, DMA_FROM_DEVICE);
-
 	/*
-	 * configuration command setup, this is 1 per session
+	 * configuration command setup
+	 * - this is 1 per session
+	 * - common across all engines.
 	 */
-	nss_crypto_setup_cmd_config(&cblk->cfg, eng->cmd_base, pp_num, encr_cfg, auth_cfg);
+	if (!eng_num) {
+		size = sizeof(*ctrl_idx->cfg);
+		dma_unmap_single(eng->dev, ctrl_idx->idx.cblk_cfg_paddr, size, DMA_FROM_DEVICE);
+		nss_crypto_setup_cmd_config(ctrl_idx->cfg, eng->cmd_base, pp_num, encr_cfg, auth_cfg);
+
+		paddr = dma_map_single(eng->dev, ctrl_idx->cfg, size, DMA_TO_DEVICE);
+		BUG_ON(paddr != ctrl_idx->idx.cblk_cfg_paddr);
+	}
 
 	/*
 	 * request command setup, these are 'n' per session; where n = MAX_QDEPTH
 	 */
+	size = sizeof(*ctrl_idx->req) * NSS_CRYPTO_MAX_QDEPTH;
+	dma_unmap_single(eng->dev, ctrl_idx->idx.cblk_req_paddr, size, DMA_FROM_DEVICE);
 	for (i = 0; i < NSS_CRYPTO_MAX_QDEPTH; i++) {
-		nss_crypto_setup_cmd_request(&cblk->req[i], eng->cmd_base, pp_num);
+		nss_crypto_setup_cmd_request(&ctrl_idx->req[i], eng->cmd_base, pp_num);
 	}
 
-	paddr = dma_map_single(eng->dev, ctrl_idx->cblk, size, DMA_TO_DEVICE);
-
-	BUG_ON(paddr != ctrl_idx->idx.cblk_paddr);
+	paddr = dma_map_single(eng->dev, ctrl_idx->req, size, DMA_TO_DEVICE);
+	BUG_ON(paddr != ctrl_idx->idx.cblk_req_paddr);
 }
 
 /*
  * nss_crypto_cblk_update()
  * 	update the configuration command block using buffer informantion
  */
-static inline nss_crypto_status_t nss_crypto_cblk_update(struct nss_crypto_ctrl_eng *eng, struct nss_crypto_cmd_block *cblk,
-						struct nss_crypto_params *params)
+static inline nss_crypto_status_t nss_crypto_cblk_update(struct nss_crypto_ctrl_eng *eng,
+		struct nss_crypto_cmd_config *cfg, struct nss_crypto_params *params)
 {
-	struct nss_crypto_cmd_config *cfg;
 	uint32_t base_addr = eng->cmd_base;
 	uint32_t encr_cfg = 0, auth_cfg = 0;
 	const uint16_t req_mask = (NSS_CRYPTO_REQ_TYPE_DECRYPT | NSS_CRYPTO_REQ_TYPE_ENCRYPT);
-
-	cfg = &cblk->cfg;
 
 	/*
 	 * update the skip values as the assumption is that it remains constant for a session
@@ -895,15 +896,15 @@ static void nss_crypto_wq_function(struct work_struct *work)
  * nss_crypto_session_update()
  * 	update allocated crypto session parameters
  */
-nss_crypto_status_t nss_crypto_session_update(nss_crypto_handle_t crypto, uint32_t session_idx, struct nss_crypto_params *params)
+nss_crypto_status_t nss_crypto_session_update(nss_crypto_handle_t crypto, uint32_t session_idx,
+					struct nss_crypto_params *params)
 {
-	const uint32_t size = sizeof(struct nss_crypto_cmd_block);
+	const uint32_t size = sizeof(struct nss_crypto_cmd_config);
 	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
 	struct nss_crypto_ctrl_eng *e_ctrl = &ctrl->eng[0];
 	nss_crypto_status_t status = NSS_CRYPTO_STATUS_OK;
 	struct nss_crypto_ctrl_idx *ctrl_idx;
 	uint32_t paddr;
-	int i = 0;
 
 	/*
 	 * check if session is a valid active session
@@ -935,25 +936,24 @@ nss_crypto_status_t nss_crypto_session_update(nss_crypto_handle_t crypto, uint32
 		return NSS_CRYPTO_STATUS_EINVAL;
 	}
 
-	for (i = 0; i < ctrl->num_eng; i++, e_ctrl++) {
-		ctrl_idx = &e_ctrl->idx_tbl[session_idx];
-		paddr = ctrl_idx->idx.cblk_paddr;
+	ctrl_idx = &e_ctrl->idx_tbl[session_idx];
+	paddr = ctrl_idx->idx.cblk_cfg_paddr;
 
-		/*
-		 * Update session specific config data
-		 */
-		dma_unmap_single(e_ctrl->dev, paddr, size, DMA_FROM_DEVICE);
+	/*
+	 * Update session specific config data
+	 */
+	dma_unmap_single(e_ctrl->dev, paddr, size, DMA_FROM_DEVICE);
 
-		status = nss_crypto_cblk_update(e_ctrl, ctrl_idx->cblk, params);
-		if (status != NSS_CRYPTO_STATUS_OK) {
-			nss_crypto_err("invalid parameters\n");
-			return NSS_CRYPTO_STATUS_EINVAL;
-		}
-
-		paddr = dma_map_single(e_ctrl->dev, ctrl_idx->cblk, size, DMA_TO_DEVICE);
-
-		BUG_ON(paddr != ctrl_idx->idx.cblk_paddr);
+	status = nss_crypto_cblk_update(e_ctrl, ctrl_idx->cfg, params);
+	if (status != NSS_CRYPTO_STATUS_OK) {
+		nss_crypto_err("invalid parameters\n");
+		return NSS_CRYPTO_STATUS_EINVAL;
 	}
+
+	paddr = dma_map_single(e_ctrl->dev, ctrl_idx->cfg, size, DMA_TO_DEVICE);
+
+	BUG_ON(paddr != ctrl_idx->idx.cblk_cfg_paddr);
+
 	return NSS_CRYPTO_STATUS_OK;
 }
 EXPORT_SYMBOL(nss_crypto_session_update);
@@ -973,8 +973,8 @@ EXPORT_SYMBOL(nss_crypto_session_alloc_nokey);
  * nss_crypto_session_alloc()
  * 	allocate a new crypto session for operation
  */
-nss_crypto_status_t nss_crypto_session_alloc(nss_crypto_handle_t crypto, struct nss_crypto_key *cipher, struct nss_crypto_key *auth,
-						uint32_t *session_idx)
+nss_crypto_status_t nss_crypto_session_alloc(nss_crypto_handle_t crypto, struct nss_crypto_key *cipher,
+					struct nss_crypto_key *auth, uint32_t *session_idx)
 {
 	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
 	struct nss_crypto_ctrl_stats *cstats = &ctrl->ctrl_stats;
@@ -1030,7 +1030,7 @@ nss_crypto_status_t nss_crypto_session_alloc(nss_crypto_handle_t crypto, struct 
 	 * program keys for all the engines for the given pipe pair (index)
 	 */
 	for (i = 0; i < ctrl->num_eng; i++) {
-		nss_crypto_key_update(&ctrl->eng[i], idx, &encr_cfg, &auth_cfg);
+		nss_crypto_key_update(&ctrl->eng[i], idx, &encr_cfg, &auth_cfg, i);
 	}
 
 	cipher_algo = cipher ? cipher->algo : NSS_CRYPTO_CIPHER_NULL;
@@ -1148,7 +1148,7 @@ void nss_crypto_idx_free(uint32_t session_idx)
 	 * program keys for all the engines for the given pipe pair (index)
 	 */
 	for (i = 0; i < ctrl->num_eng; i++) {
-		nss_crypto_key_update(&ctrl->eng[i], session_idx, &encr_cfg, &auth_cfg);
+		nss_crypto_key_update(&ctrl->eng[i], session_idx, &encr_cfg, &auth_cfg, i);
 	}
 
 	clear_bit(session_idx, ctrl->idx_bitmap);
@@ -1284,37 +1284,59 @@ EXPORT_SYMBOL(nss_crypto_get_auth_keylen);
  */
 nss_crypto_status_t nss_crypto_idx_init(struct nss_crypto_ctrl_eng *eng, struct nss_crypto_idx msg[])
 {
+	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
+	struct nss_crypto_ctrl_eng *eng0 = &ctrl->eng[0];
+	struct nss_crypto_ctrl_idx *ctrl_idx_eng0;
 	struct nss_crypto_ctrl_idx *ctrl_idx;
+	struct nss_crypto_idx *idx_eng0;
 	struct nss_crypto_idx *idx;
-	uint32_t paddr;
+	size_t size;
 	int i;
 
-	for (i = 0; i < NSS_CRYPTO_MAX_IDXS; i++) {
-		ctrl_idx = &eng->idx_tbl[i];
+	ctrl_idx_eng0 = eng0->idx_tbl;
+	ctrl_idx = eng->idx_tbl;
+
+	for (i = 0; i < NSS_CRYPTO_MAX_IDXS; i++, ctrl_idx_eng0++, ctrl_idx++) {
+		idx_eng0 = &ctrl_idx_eng0->idx;
 		idx = &ctrl_idx->idx;
-		paddr = 0;
 
 		/*
-		 * allocate the command block
+		 * allocate the command request block
 		 */
-		ctrl_idx->cblk = nss_crypto_desc_alloc(eng->dev, &paddr, sizeof(struct nss_crypto_cmd_block));
-		if (!ctrl_idx->cblk) {
+		size = sizeof(*ctrl_idx->req) * NSS_CRYPTO_MAX_QDEPTH;
+		ctrl_idx->req = nss_crypto_desc_alloc(eng->dev, &idx->cblk_req_paddr, size);
+		if (!ctrl_idx->req) {
 			nss_crypto_err("unable to allocate session table: idx no failed = %d\n", i);
 			return NSS_CRYPTO_STATUS_ENOMEM;
 		}
 
+		/*
+		 * Since, there is only one instance for all engines we need to allocate it
+		 * only once
+		 */
+		if (ctrl_idx_eng0->cfg) {
+			ctrl_idx->cfg = ctrl_idx_eng0->cfg;
+			idx->cblk_cfg_paddr = idx_eng0->cblk_cfg_paddr;
+			goto skip_alloc;
+		}
 
+		ctrl_idx_eng0->cfg = nss_crypto_desc_alloc(eng->dev, &idx_eng0->cblk_cfg_paddr, sizeof(*ctrl_idx->cfg));
+		if (!ctrl_idx_eng0->cfg) {
+			nss_crypto_err("%p: Unable to allocate config block for idx(%d)\n", eng, i);
+			return NSS_CRYPTO_STATUS_ENOMEM;
+		}
+
+skip_alloc:
 		idx->pp_num = (i % NSS_CRYPTO_BAM_PP);
-		idx->cmd_len = NSS_CRYPTO_CACHE_CMD_SZ;
+		idx->cblk_cfg_len = NSS_CRYPTO_CACHE_CMD_SZ;
+		idx->cblk_req_len = sizeof(struct nss_crypto_cmd_request) * NSS_CRYPTO_MAX_QDEPTH;
 
 		/*
 		 * for indexes beyond MAX_CACHED switch to uncached mode
 		 */
 		if ((i >= NSS_CRYPTO_MAX_CACHED_IDXS) || CONFIG_NSS_CRYPTO_FORCE_UNCACHE) {
-			idx->cmd_len = NSS_CRYPTO_UNCACHE_CMD_SZ;
+			idx->cblk_cfg_len = NSS_CRYPTO_UNCACHE_CMD_SZ;
 		}
-
-		idx->cblk_paddr = paddr;
 
 		/*
 		 * finally update the index info into the message

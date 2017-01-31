@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2015-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -66,7 +66,8 @@ struct nss_crypto_auth_cfg {
 
 struct nss_crypto_ctrl_idx {
 	struct nss_crypto_idx idx;
-	struct nss_crypto_cmd_block *cblk;
+	struct nss_crypto_cmd_config *cfg;
+	struct nss_crypto_cmd_request *req;
 };
 
 /**
@@ -80,7 +81,7 @@ struct nss_crypto_ctrl_eng {
 	uint32_t bam_ee;	/**< BAM execution enivironment for the crypto engine */
 	struct device *dev;	/**< HLOS device type for the crypto engine */
 
-	struct nss_crypto_desc *hw_desc[NSS_CRYPTO_BAM_PP]; 		/**< H/W descriptors BAM rings, command descriptors */
+	struct nss_crypto_desc *hw_desc[NSS_CRYPTO_BAM_PP]; 		/**< CMD descriptors */
 	struct nss_crypto_ctrl_idx idx_tbl[NSS_CRYPTO_MAX_IDXS];	/**< index table */
 
 	struct nss_crypto_stats stats;	/**< engine stats */

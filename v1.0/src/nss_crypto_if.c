@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -616,10 +616,11 @@ void nss_crypto_init(void)
  */
 int nss_crypto_engine_init(uint32_t eng_num)
 {
-	struct nss_crypto_msg nim;
-	struct nss_crypto_config_eng *open = &nim.msg.eng;
-	struct nss_crypto_ctrl_eng *e_ctrl;
 	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
+	struct nss_crypto_config_eng *open;
+	struct nss_crypto_ctrl_eng *e_ctrl;
+	struct nss_crypto_msg *nim;
+	int status = 0;
 	int i;
 
 	e_ctrl = &ctrl->eng[eng_num];
@@ -627,6 +628,13 @@ int nss_crypto_engine_init(uint32_t eng_num)
 	/*
 	 * prepare the open config message
 	 */
+	nim = kzalloc(sizeof(struct nss_crypto_msg), GFP_ATOMIC);
+	if (!nim) {
+		nss_crypto_err("failed to allocate memory\n");
+		return -ENOMEM;
+	}
+
+	open = &nim->msg.eng;
 	open->eng_id = eng_num;
 	open->bam_pbase = e_ctrl->bam_pbase;
 
@@ -636,13 +644,19 @@ int nss_crypto_engine_init(uint32_t eng_num)
 
 	if (nss_crypto_idx_init(e_ctrl, open->idx) != NSS_CRYPTO_STATUS_OK) {
 		nss_crypto_err("failed to initiallize\n");
-		return NSS_CRYPTO_STATUS_FAIL;
+		status = -ENOMEM;
+		goto free;
 	}
 
 	/*
 	 * send open config message to NSS crypto
 	 */
-	return nss_crypto_send_msg_sync(&nim, NSS_CRYPTO_MSG_TYPE_OPEN_ENG);
+	if (nss_crypto_send_msg_sync(nim, NSS_CRYPTO_MSG_TYPE_OPEN_ENG) != NSS_CRYPTO_STATUS_OK)
+		status = -EBUSY;
+
+free:
+	kfree(nim);
+	return status;
 }
 
 /*
@@ -651,11 +665,19 @@ int nss_crypto_engine_init(uint32_t eng_num)
  */
 nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum nss_crypto_session_state state, enum nss_crypto_cipher algo)
 {
-	struct nss_crypto_msg nim;
-	struct nss_crypto_config_session *session = &nim.msg.session;
 	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
+	struct nss_crypto_config_session *session;
+	struct nss_crypto_msg *nim;
 	nss_crypto_status_t status;
 	uint32_t iv_len = 0;
+
+	nim = kzalloc(sizeof(struct nss_crypto_msg), GFP_KERNEL);
+	if (!nim) {
+		nss_crypto_err("unable to allocate memory\n");
+		return NSS_CRYPTO_STATUS_FAIL;
+	}
+
+	session = &nim->msg.session;
 
 	switch (state) {
 	case NSS_CRYPTO_SESSION_STATE_ACTIVE:
@@ -668,7 +690,8 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 
 	default:
 		nss_crypto_err("incorrect session state = %d\n", state);
-		return NSS_CRYPTO_STATUS_FAIL;
+		status = NSS_CRYPTO_STATUS_FAIL;
+		goto free;
 	}
 
 	switch (algo) {
@@ -687,7 +710,8 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 
 	default:
 		nss_crypto_err("invalid cipher\n");
-		return NSS_CRYPTO_STATUS_FAIL;
+		status = NSS_CRYPTO_STATUS_FAIL;
+		goto free;
 	}
 
 	session->idx = session_idx;
@@ -697,10 +721,10 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 	/*
 	 * send reset stats config message to NSS crypto
 	 */
-	status = nss_crypto_send_msg_sync(&nim, NSS_CRYPTO_MSG_TYPE_UPDATE_SESSION);
+	status = nss_crypto_send_msg_sync(nim, NSS_CRYPTO_MSG_TYPE_UPDATE_SESSION);
 	if (status != NSS_CRYPTO_STATUS_OK) {
 		nss_crypto_info_always("session(%d) update failed\n", session->idx);
-		return status;
+		goto free;
 	}
 
 	/*
@@ -709,7 +733,8 @@ nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum ns
 	if (session->state == NSS_CRYPTO_SESSION_STATE_FREE) {
 		nss_crypto_idx_free(session->idx);
 	}
-
+free:
+	kfree(nim);
 	return status;
 }
 
