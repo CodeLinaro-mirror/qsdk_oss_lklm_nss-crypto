@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2015-2016 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015-2017 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -155,6 +155,9 @@ bool nss_crypto_pm_event_cb(void *app_data, bool turbo, bool auto_scale)
 	 */
 	nss_crypto_pm_notify_unregister();
 
+	atomic_set(&ctrl->perf_level, NSS_PM_PERF_LEVEL_TURBO);
+	complete(&ctrl->perf_complete);
+
 	return true;
 }
 
@@ -211,6 +214,7 @@ static void nss_crypto_clock_init(struct platform_device *pdev, struct device_no
 		}
 	}
 
+	atomic_set(&ctrl->perf_level, NSS_PM_PERF_LEVEL_NOMINAL);
 	nss_crypto_pm_notify_register(nss_crypto_pm_event_cb, ctrl);
 }
 
