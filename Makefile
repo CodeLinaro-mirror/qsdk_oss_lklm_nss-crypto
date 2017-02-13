@@ -14,4 +14,6 @@
 # PERFORMANCE OF THIS SOFTWARE.
 
 obj-m += $(NSS_CRYPTO_DIR)/src/
+ifneq (, $(findstring ipq806x, $(SoC)))
 obj-m += $(NSS_CRYPTO_DIR)/tool/
+endif

@@ -1,0 +1,665 @@
+/*
+ * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+ * OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ *
+ */
+#include <linux/firmware.h>
+#include <linux/platform_device.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
+#include <linux/of_address.h>
+#include <linux/memory.h>
+#include <linux/delay.h>
+#include <linux/io.h>
+
+#include <nss_api_if.h>
+#include <nss_crypto_defines.h>
+#include <nss_crypto_api.h>
+#include "nss_crypto_hlos.h"
+#include "nss_crypto_ctrl.h"
+#include <engines/nss_crypto_eip197.h>
+
+/*
+ * nss_crypto_eip197_global_reset_status()
+ *	returns true if reset is successful
+ */
+static bool nss_crypto_eip197_hw_reset_status(void __iomem *base_addr)
+{
+	uint32_t status;
+
+	/*
+	 * Data Fetch Engine and Data Store Engine status are checked
+	 * in order to determine whether reset is completed.
+	 */
+	status = ioread32(base_addr + NSS_CRYPTO_EIP197_HIA_DFE_THR_STAT);
+	if (status != NSS_CRYPTO_EIP197_DFE_RST_DONE)
+		return false;
+
+	status = ioread32(base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_STAT);
+	if (status != NSS_CRYPTO_EIP197_DSE_RST_DONE)
+		return false;
+
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_DFE_THR_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_CTRL);
+
+	return true;
+}
+
+/*
+ * nss_crypto_eip197_hw_reset()
+ *	HW reset routine
+ */
+static int nss_crypto_eip197_hw_reset(void __iomem *base_addr)
+{
+	/*
+	 * Reset Host Interface Adapter(HIA) module
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_DFE_THR_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_DFE_CFG);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PRIO0);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PRIO1);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PRIO2);
+	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PE_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_DSE_CFG_RESET, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_CFG);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_LO);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_HI);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_SLAVE_CTRL0);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_MASTER_CTRL1);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_INLINE_CTRL0);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_IN_DBUF_THR);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_IN_TBUF_THR);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OUT_DBUF_THRES);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OUT_DBUF_THRES);
+	iowrite32(NSS_CRYPTO_EIP197_TOKEN_CTRL_RESET,
+		base_addr + NSS_CRYPTO_EIP197_PE_EIP96_TOKEN_CTRL);
+
+	/*
+	 * wait for 10ms before polling the status
+	 */
+	mdelay(10);
+
+	return nss_crypto_eip197_hw_reset_status(base_addr);
+}
+
+/*
+ * nss_crypto_eip197_hw_setup_core()
+ *	setup eip197 core
+ */
+static void nss_crypto_eip197_hw_setup_core(void __iomem *base_addr)
+{
+	uint32_t data;
+
+	/*
+	 * HIA MASTER BURST SIZE update
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_HIA_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_MST_CTRL);
+
+	/*
+	 * Data Fetch Engine configuration
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_DFE_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_DFE_CFG);
+
+	/*
+	 * Data Store engine configuration
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_DSE_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_CFG);
+	iowrite32(NSS_CRYPTO_EIP197_INDATA_THR, base_addr + NSS_CRYPTO_EIP197_PE_IN_DBUF_THR);
+	iowrite32(NSS_CRYPTO_EIP197_INTOKEN_THR, base_addr + NSS_CRYPTO_EIP197_PE_IN_TBUF_THR);
+	iowrite32(NSS_CRYPTO_EIP197_OUTDATA_THR, base_addr + NSS_CRYPTO_EIP197_PE_OUT_DBUF_THRES);
+
+	/*
+	 * This enable timeout counter, if packet engine hangs, this timeout can
+	 * help to recover from hang
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_TOKEN_CFG, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_TOKEN_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_OUT_BUF_CTRL);
+
+	/*
+	 * Write LA FIFO BASE ADDR LOW WRITE
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_LO);
+
+	/*
+	 * This bit is set for a command descriptor error, write 1 to clear the error
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_SLAVE_CTRL0);
+
+	/*
+	 * LA master control write
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_MASTER_CTRL1);
+	iowrite32(NSS_CRYPTO_EIP197_INLINE_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_INLINE_CTRL0);
+	iowrite32(NSS_CRYPTO_EIP197_ENB_ALL_RINGS, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PE_CTRL);
+
+	/*
+	 * Enable Data store engine processing thread
+	 */
+	data = ioread32(base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_CTRL);
+	data |= NSS_CRYPTO_EIP197_ENB_DSE_THREAD;
+	iowrite32(data, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_CTRL);
+
+	/*
+	 * Enable and configure PRNG module
+	 * TODO Instead of hard coding these values, we need
+	 * to capture them using get_random_bytes().
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_SEED_LO, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_SEED_LO);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_SEED_HI, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_SEED_HI);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_KEY0_LO, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_KEY0_LO);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_KEY0_HI, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_KEY0_HI);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_KEY1_LO, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_KEY1_LO);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_KEY1_HI, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_KEY1_HI);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_LFSR_LO, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_LFSR_LO);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_LFSR_HI, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_LFSR_HI);
+	iowrite32(NSS_CRYPTO_EIP197_PRNG_CTRL, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_PRNG_CTRL);
+}
+
+/*
+ * nss_crypto_eip197_hw_setup_cache()
+ *	setup EIP197 flow and transform cache
+ */
+void nss_crypto_eip197_hw_setup_cache(void __iomem *base_addr)
+{
+	void __iomem *addr;
+	uint32_t val;
+	int i;
+
+	/*
+	 * Enable Flow record cache 0
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_FLOW_REC, base_addr + NSS_CRYPTO_EIP197_CS_RAM_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_FRC_ECCCTRL);
+
+	/*
+	 * Put Flow record cache into SW reset
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_RST_FLOW_REC, base_addr + NSS_CRYPTO_EIP197_FRC_PARAMS);
+
+	/*
+	 * Initialise FLow record Cache
+	 * Set Record administrative words
+	 *	- Set Hash collision Head and Next pointers
+	 *	- Set Previous and Next free list pointers
+	 * Hash table words
+	 *	- Set Hash collision head
+	 */
+	for (i = 0 ; i < NSS_CRYPTO_EIP197_MAX_FLOW_REC; i++) {
+		addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + (i * 16);
+
+		/*
+		 * if its the first record then, then free_list_prev is loaded
+		 * with 0x3ff, while all other records are loaded with record_index - 1
+		 *
+		 * if its the last record the, then free_list_next is loaded
+		 * with 0x3ff, while all other records are loaded with record_index + 1
+		 */
+		if (i == 0)
+			val = (NSS_CRYPTO_EIP197_EMPTY_REC << 10) | 0x1;
+		else if (i == (NSS_CRYPTO_EIP197_MAX_FLOW_REC - 1))
+			val = ((i - 1) << 10) | NSS_CRYPTO_EIP197_EMPTY_REC;
+		else
+			val =  ((i - 1) << 10) | (i + 1);
+
+		iowrite32(NSS_CRYPTO_EIP197_RST_HASH_COL, addr);
+		iowrite32(val, addr + 0x4);
+		iowrite32(0, addr + 0x8);
+		iowrite32(0, addr + 0xC);
+	}
+
+	/*
+	 * reset hash collision bucket
+	 */
+	addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + NSS_CRYPTO_EIP197_FLOW_REC_END;
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_HASH_BUCKETS; i++)
+		iowrite32(U32_MAX, addr + (0x4 * i));
+
+	/*
+	 * configure FRC control registers
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_CS_RAM_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_FRC_FREECHAIN_CFG, base_addr + NSS_CRYPTO_EIP197_FRC_FREECHAIN);
+	iowrite32(NSS_CRYPTO_EIP197_FRC_PARAMS2_CFG, base_addr + NSS_CRYPTO_EIP197_FRC_PARAMS2);
+	iowrite32(NSS_CRYPTO_EIP197_FRC_PARAMS_CFG, base_addr + NSS_CRYPTO_EIP197_FRC_PARAMS);
+
+	/*
+	 * Enable Transform record cache 0
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_TRANS_REC, base_addr + NSS_CRYPTO_EIP197_CS_RAM_CTRL);
+
+	/*
+	 * Put Transform record cache into SW reset
+	 */
+	iowrite32(0x1, base_addr + NSS_CRYPTO_EIP197_TRC_PARAMS);
+
+	/*
+	 * Initialise Transform record Cache
+	 * Set Record administrative words
+	 *	- Set Hash collision Head and Next pointers
+	 *	- Set Previous and Next free list pointers
+	 * Hash table words
+	 *	- Set Hash collision head
+	 */
+	for (i = 0 ; i < NSS_CRYPTO_EIP197_MAX_TRANS_REC; i++) {
+		addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + (i * 16);
+
+		/*
+		 * if its the first record them, then free_list_prev is loaded
+		 * with 0x3ff, while all other records are loaded with record_index - 1
+		 *
+		 * if its the last record the, then free_list_next is loaded
+		 * with 0x3ff, while all other records are loaded with record_index + 1
+		 */
+		if (i == 0)
+			val = ((NSS_CRYPTO_EIP197_EMPTY_REC << 10) | 0x1);
+		else if (i == (NSS_CRYPTO_EIP197_MAX_TRANS_REC - 1))
+			val = (((i - 1) << 10) | NSS_CRYPTO_EIP197_EMPTY_REC);
+		else
+			val =  (((i - 1) << 10) | (i + 1));
+
+		iowrite32(NSS_CRYPTO_EIP197_RST_HASH_COL, addr);
+		iowrite32(val, addr + 0x4);
+		iowrite32(0, addr + 0x8);
+		iowrite32(0, addr + 0xC);
+	}
+
+	/*
+	 * reset hash collision bucket
+	 */
+	addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + NSS_CRYPTO_EIP197_TRANS_REC_END;
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_HASH_BUCKETS; i++)
+		iowrite32(U32_MAX, addr + (0x4 * i));
+
+	/*
+	 * configure TRC configuration parameters
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_CS_RAM_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_TRC_FREECHAIN_CFG, base_addr + NSS_CRYPTO_EIP197_TRC_FREECHAIN);
+	iowrite32(NSS_CRYPTO_EIP197_TRC_PARAMS2_CFG, base_addr + NSS_CRYPTO_EIP197_TRC_PARAMS2);
+	iowrite32(NSS_CRYPTO_EIP197_TRC_PARAMS_CFG, base_addr + NSS_CRYPTO_EIP197_TRC_PARAMS);
+
+	/*
+	 * Configure FLUE engine initial Hash value, This initial hash
+	 * will be used by the engine to  compute flow hash id
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_FHASH_IV0_CFG, base_addr + NSS_CRYPTO_EIP197_FHASH_IV0);
+	iowrite32(NSS_CRYPTO_EIP197_FHASH_IV1_CFG, base_addr + NSS_CRYPTO_EIP197_FHASH_IV1);
+	iowrite32(NSS_CRYPTO_EIP197_FHASH_IV2_CFG, base_addr + NSS_CRYPTO_EIP197_FHASH_IV2);
+	iowrite32(NSS_CRYPTO_EIP197_FHASH_IV3_CFG, base_addr + NSS_CRYPTO_EIP197_FHASH_IV3);
+
+	/*
+	 * Configure FLUE_CONFIG register
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_FLUE, base_addr + NSS_CRYPTO_EIP197_FLUE_CONFIG(0));
+	iowrite32(NSS_CRYPTO_EIP197_FLUE_OFFSET_CFG, base_addr + NSS_CRYPTO_EIP197_FLUE_OFFSET);
+
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_FLUE_IFC_LUT0);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_FLUE_IFC_LUT1);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_FLUE_IFC_LUT2);
+ }
+
+/*
+ * nss_crypto_eip197_hw_setup_fw()
+ *	setup EIP197 firmware resets and initializes
+ */
+static void nss_crypto_eip197_hw_setup_fw(void __iomem *base_addr)
+{
+	int i;
+
+	/*
+	 * Init ICE scratch control register
+	 * Reset ICE scratch RAM area
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_SCRATCH_RAM, base_addr + NSS_CRYPTO_EIP197_PE_ICE_SCRATCH_CTRL);
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_SCRATCH_RAM; i++)
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_ICE_SCRATCH_RAM + (i * 0x4));
+
+
+	/*
+	 * Init OCE scratch control register
+	 * Reset OCE scratch RAM area
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_SCRATCH_RAM, base_addr + NSS_CRYPTO_EIP197_PE_OCE_SCRATCH_CTRL);
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_SCRATCH_RAM; i++)
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OCE_SCRATCH_RAM + (i * 0x4));
+
+}
+
+/*
+ * nss_crypto_eip197_hw_boot_ofpp()
+ *	load output flow post processor (OFPP) firmware
+ */
+static void nss_crypto_eip197_hw_boot_ofpp(struct device *dev, void __iomem *base_addr, const char *fw_name)
+{
+	const struct firmware *fw = NULL;
+	uint32_t *data;
+	int i;
+
+	/*
+	 * pulling engine out of reset
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_RST_PE, base_addr + NSS_CRYPTO_EIP197_PE_OCE_FPP_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_ENB_OFPP, base_addr + NSS_CRYPTO_EIP197_PE_OCE_RAM_CTRL);
+
+	/*
+	 * load the firmware to the engine
+	 */
+	if (request_firmware(&fw, fw_name, dev)) {
+		nss_crypto_warn("%p: FW(%s) load failed\n", dev, fw_name);
+		return;
+	}
+
+	for (i = 0, data = (uint32_t *)fw->data; i < fw->size; i += 4, data++)
+		iowrite32(*data, base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + i);
+
+	/*
+	 * put OCE RAM into reset so that the next engine can load
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OCE_RAM_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OCE_FPP_CTRL);
+
+	release_firmware(fw);
+
+#if defined(NSS_CRYPTO_DEBUG)
+	/*
+	 * put a delay of 100ms before accessing the FW specific registers
+	 */
+	mdelay(100);
+
+	/*
+	 * put engine into debug mode for reading the FW version
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_OFPP_DBG, base_addr + NSS_CRYPTO_EIP197_PE_OCE_FPP_CTRL);
+
+	nss_crypto_info("%p: %s version(0x%x)\n", dev, fw_name,
+			ioread32(base_addr + NSS_CRYPTO_EIP197_OCE_OFPP_VERSION_REG));
+#endif
+}
+
+/*
+ * nss_crypto_eip197_hw_boot_opue()
+ *	load output pull-up engine (OPUE) firmware
+ */
+static void nss_crypto_eip197_hw_boot_opue(struct device *dev, void __iomem *base_addr, const char *fw_name)
+{
+	const struct firmware *fw = NULL;
+	uint32_t *data;
+	int i;
+
+	/*
+	 * pulling engine out of reset
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_RST_PE, base_addr + NSS_CRYPTO_EIP197_PE_OCE_PUE_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_ENB_OPUE, base_addr + NSS_CRYPTO_EIP197_PE_OCE_RAM_CTRL);
+
+	/*
+	 * load the firmware to the engine
+	 */
+	if (request_firmware(&fw, fw_name, dev)) {
+		nss_crypto_warn("%p: FW(%s) load failed\n", dev, fw_name);
+		return;
+	}
+
+	for (i = 0, data = (uint32_t *)fw->data; i < fw->size; i += 4, data++)
+		iowrite32(*data, base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + i);
+
+	/*
+	 * put OCE RAM into reset
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OCE_RAM_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OCE_PUE_CTRL);
+
+	release_firmware(fw);
+
+#if defined(NSS_CRYPTO_DEBUG)
+	/*
+	 * put a delay of 100ms before accessing the FW specific registers
+	 */
+	mdelay(100);
+
+	/*
+	 * put engine into debug mode for reading the FW version
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_OPUE_DBG, base_addr + NSS_CRYPTO_EIP197_PE_OCE_PUE_CTRL);
+
+	nss_crypto_info("%p: %s version(0x%x)\n", dev, fw_name,
+			ioread32(base_addr + NSS_CRYPTO_EIP197_OCE_OPUE_VERSION_REG));
+#endif
+}
+
+/*
+ * nss_crypto_eip197_hw_boot_ifpp()
+ *	load input flow post processor (IFPP) firmware
+ */
+static void nss_crypto_eip197_hw_boot_ifpp(struct device *dev, void __iomem *base_addr, const char *fw_name)
+{
+	const struct firmware *fw = NULL;
+	uint32_t *data;
+	int i;
+
+	/*
+	 * pulling engine out of reset
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_RST_PE, base_addr + NSS_CRYPTO_EIP197_PE_ICE_FPP_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_ENB_IFPP, base_addr + NSS_CRYPTO_EIP197_PE_ICE_RAM_CTRL);
+
+	/*
+	 * load the firmware to the engine
+	 */
+	if (request_firmware(&fw, fw_name, dev)) {
+		nss_crypto_warn("%p: FW(%s) load failed\n", dev, fw_name);
+		return;
+	}
+
+	for (i = 0, data = (uint32_t *)fw->data; i < fw->size; i += 4, data++)
+		iowrite32(*data, base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + i);
+
+	/*
+	 * put ICE (input classification engine) RAM into reset
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_ICE_RAM_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_ICE_FPP_CTRL);
+
+	release_firmware(fw);
+
+#if defined(NSS_CRYPTO_DEBUG)
+	/*
+	 * put a delay of 100ms before accessing the FW specific registers
+	 */
+	mdelay(100);
+
+	/*
+	 * put engine into debug mode for reading the FW version
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_IFPP_DBG, base_addr + NSS_CRYPTO_EIP197_PE_ICE_FPP_CTRL);
+
+	nss_crypto_info("%p: %s version(0x%x)\n", dev, fw_name,
+			ioread32(base_addr + NSS_CRYPTO_EIP197_ICE_IFPP_VERSION_REG));
+#endif
+}
+
+/*
+ * nss_crypto_eip197_hw_boot_ipue()
+ *	load input pull-up engine (IPUE) firmware
+ */
+static void nss_crypto_eip197_hw_boot_ipue(struct device *dev, void __iomem *base_addr, const char *fw_name)
+{
+	const struct firmware *fw = NULL;
+	uint32_t *data;
+	int i;
+
+	/*
+	 * pulling engine out of reset
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_RST_PE, base_addr + NSS_CRYPTO_EIP197_PE_ICE_PUE_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_ENB_IPUE, base_addr + NSS_CRYPTO_EIP197_PE_ICE_RAM_CTRL);
+
+	/*
+	 * load the firmware to the engine
+	 */
+	if (request_firmware(&fw, fw_name, dev)) {
+		nss_crypto_warn("%p: FW(%s) load failed\n", dev, fw_name);
+		return;
+	}
+
+	for (i = 0, data = (uint32_t *)fw->data; i < fw->size; i += 4, data++)
+		iowrite32(*data, base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + i);
+
+	/*
+	 * put ICE (input classification engine) RAM into reset
+	 */
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_ICE_RAM_CTRL);
+	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_ICE_PUE_CTRL);
+
+	release_firmware(fw);
+
+#if defined(NSS_CRYPTO_DEBUG)
+	/*
+	 * put a delay of 100ms before accessing the FW specific registers
+	 */
+	mdelay(100);
+
+	/*
+	 * put engine into debug mode for reading the FW version
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_IPUE_DBG, base_addr + NSS_CRYPTO_EIP197_PE_ICE_PUE_CTRL);
+
+	nss_crypto_info("%p: %s version(0x%x)\n", dev, fw_name,
+		ioread32(base_addr + NSS_CRYPTO_EIP197_ICE_IPUE_VERSION_REG));
+#endif
+}
+
+/*
+ * nss_crypto_eip197_hw_setup()
+ *	Pre initialization function for eip197
+ */
+void nss_crypto_eip197_hw_setup(void __iomem *base_addr)
+{
+	/*
+	 * Reset EIP blocks and check if reset is complete
+	 */
+	if (!nss_crypto_eip197_hw_reset(base_addr)) {
+		/*
+		 * If reset is not complete yet, wait for reset to
+		 * complete before doing any other initialization
+		 */
+		while (!nss_crypto_eip197_hw_reset_status(base_addr))
+			mdelay(100);
+	}
+
+	/*
+	 * Pre-initialization of EIP block, the following is performed
+	 * - Data Fetch Engine (DFE) init
+	 * - Data Store Engine (DSE) init
+	 * - Ring Arbiter (HIA_RA) init
+	 * - PRNG init
+	 * - Flow record cache init
+	 * - Transform record cache init
+	 * - ICE/OCE firmware init
+	 */
+	nss_crypto_eip197_hw_setup_core(base_addr);
+	nss_crypto_eip197_hw_setup_cache(base_addr);
+	nss_crypto_eip197_hw_setup_fw(base_addr);
+}
+
+/*
+ * nss_crypto_eip197_hw_setup_dma()
+ *	prepare DMA for operation
+ */
+void nss_crypto_eip197_hw_setup_dma(void __iomem *base_addr, uint32_t dma_mask)
+{
+	uint32_t max_dma_rings = hweight32(dma_mask);
+	uint32_t val;
+	int i;
+
+	/*
+	 * Allow passing 16 bytes of metadata information from
+	 * input to output.
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_MDATA, base_addr + NSS_CRYPTO_EIP197_METADATA_EN_OFFSET);
+
+	/*
+	 * We will reset all the DMA rings supported by our architecture
+	 */
+	for (i = 0; i < max_dma_rings; i++) {
+		/*
+		 * reset command descriptor ring (CDR)
+		 */
+		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_COUNT(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_PREP_PNTR(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_LO(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_HI(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_SIZE(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DESC_SIZE(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_CFG(i));
+
+		/*
+		 * enable CDR buffering
+		 */
+		iowrite32(NSS_CRYPTO_EIP197_CLR_DMA, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DMA_CFG(i));
+		iowrite32(NSS_CRYPTO_EIP197_RST_CMD, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_STAT(i));
+
+		/*
+		 * reset result descriptor ring (RDR)
+		 */
+		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_COUNT(i));
+		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PROC_COUNT(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PREP_PNTR(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PROC_PNTR(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_LO(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_HI(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_SIZE(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DESC_SIZE(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_CFG(i));
+
+		/*
+		 * enable RDR buffering
+		 */
+		val = NSS_CRYPTO_EIP197_CLR_DMA | NSS_CRYPTO_EIP197_CLR_DMA_CTRL;
+		iowrite32(val, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DMA_CFG(i));
+		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_THRESH(i));
+		iowrite32(NSS_CRYPTO_EIP197_RST_RES, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_STAT(i));
+	}
+}
+
+/*
+ * nss_crypto_eip197_hw_init()
+ *	initialize the EIP197 HW
+ */
+void nss_crypto_eip197_hw_init(struct platform_device *pdev, struct device_node *np, void __iomem *base_addr)
+{
+	struct nss_crypto_node *node = platform_get_drvdata(pdev);
+
+	nss_crypto_eip197_hw_setup(base_addr);
+
+	/*
+	 * check and load engine firmware; if this engine is enabled
+	 * with these additonal classifiers
+	 */
+	if (of_property_read_bool(np, "qcom,ifpp-enabled"))
+		nss_crypto_eip197_hw_boot_ifpp(&pdev->dev, base_addr, "ifpp.bin");
+
+	if (of_property_read_bool(np, "qcom,ipue-enabled"))
+		nss_crypto_eip197_hw_boot_ipue(&pdev->dev, base_addr, "ipue.bin");
+
+	if (of_property_read_bool(np, "qcom,ofpp-enabled"))
+		nss_crypto_eip197_hw_boot_ofpp(&pdev->dev, base_addr, "ofpp.bin");
+
+	if (of_property_read_bool(np, "qcom,opue-enabled"))
+		nss_crypto_eip197_hw_boot_opue(&pdev->dev, base_addr, "opue.bin");
+
+	nss_crypto_eip197_hw_setup_dma(base_addr, node->dma_mask);
+}
