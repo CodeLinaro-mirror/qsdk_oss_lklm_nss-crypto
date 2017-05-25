@@ -109,6 +109,76 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 };
 
 /*
+ * nss_crypto_eip197_clock_init()
+ *	Initialise crypto clock
+ */
+static int nss_crypto_eip197_clock_init(struct platform_device *pdev)
+{
+	struct device_node *np = of_node_get(pdev->dev.of_node);
+	const char *clk_string;
+	struct property *prop;
+	uint64_t *clk_rate;
+	struct clk *clk;
+	int status = 0;
+	int count, i;
+	size_t size;
+
+	/*
+	 * Enable crypto clock
+	 */
+	count = of_property_count_strings(np, "clock-names");
+	if (count < 0) {
+		nss_crypto_info("crypto clock entry not found\n");
+		return 0;
+	}
+
+	/*
+	 * Parse clock frequency from crypto DTSI node
+	 */
+	prop = of_find_property(np, "clock-frequency", NULL);
+	size = prop->length / sizeof(*clk_rate);
+
+	clk_rate = kzalloc(size, GFP_KERNEL);
+	if (!clk_rate)
+		return -ENOMEM;
+
+	if (of_property_read_u64_array(np, "clock-frequency", clk_rate, size)) {
+		status = -EINVAL;
+		goto free;
+	}
+
+	for (i = 0; i < count; i++) {
+		/*
+		 * parse clock names from DTSI
+		 */
+		of_property_read_string_index(np, "clock-names", i, &clk_string);
+
+		clk = devm_clk_get(&pdev->dev, clk_string);
+		if (IS_ERR(clk)) {
+			nss_crypto_err("%p: cannot get crypto clock: %s\n", &pdev->dev, clk_string);
+			status = -ENOENT;
+			goto free;
+		}
+
+		if (clk_set_rate(clk, clk_rate[i])) {
+			nss_crypto_err("%p: cannot set %llx freq for %s\n", &pdev->dev, clk_rate[i], clk_string);
+			status = -EINVAL;
+			goto free;
+		}
+
+		if (clk_prepare_enable(clk)) {
+			nss_crypto_err("%p: cannot enable clock: %s\n", &pdev->dev, clk_string);
+			status = -EFAULT;
+			goto free;
+		}
+	}
+
+free:
+	kfree(clk_rate);
+	return status;
+}
+
+/*
  * nss_crypto_eip197_ring_init()
  *	command and result descriptor ring initialization
  */
@@ -466,6 +536,12 @@ int nss_crypto_eip197_init(struct platform_device *pdev, const char *name)
 	struct device_node *child;
 	uint32_t reg_offset;
 	int status;
+
+	status = nss_crypto_eip197_clock_init(pdev);
+	if (status < 0) {
+		nss_crypto_warn("%p: unable to intialize clock, status(%d)\n", pdev, status);
+		return status;
+	}
 
 	/*
 	 * Crypto Registers resource
