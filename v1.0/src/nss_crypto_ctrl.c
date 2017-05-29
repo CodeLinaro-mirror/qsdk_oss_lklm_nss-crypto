@@ -611,14 +611,16 @@ static nss_crypto_status_t nss_crypto_validate_auth(struct nss_crypto_key *auth,
 	/*
 	 * SHA1-HMAC
 	 */
-	if ((auth->algo == NSS_CRYPTO_AUTH_SHA1_HMAC) && (auth->key_len == NSS_CRYPTO_KEYLEN_SHA1HMAC)) {
+	if ((auth->algo == NSS_CRYPTO_AUTH_SHA1_HMAC)
+		 && (auth->key_len <= NSS_CRYPTO_MAX_KEYLEN_SHA1)) {
+
 		auth_cfg->iv = (uint32_t *)&fips_sha1_iv[0];
 
 		auth_cfg->cfg |= CRYPTO_AUTH_SEG_CFG_MODE_HMAC;
 		auth_cfg->cfg |= (CRYPTO_AUTH_SEG_CFG_ALG_SHA | CRYPTO_AUTH_SEG_CFG_SIZE_SHA1);
 		auth_cfg->cfg |= (CRYPTO_AUTH_SEG_CFG_FIRST | CRYPTO_AUTH_SEG_CFG_LAST);
 
-		memcpy(auth_cfg->key, auth->key, NSS_CRYPTO_KEYLEN_SHA1HMAC);
+		memcpy(auth_cfg->key, auth->key, auth->key_len);
 
 		return NSS_CRYPTO_STATUS_OK;
 	}
@@ -737,8 +739,20 @@ static inline nss_crypto_status_t nss_crypto_cblk_update(struct nss_crypto_ctrl_
 		auth_cfg |= CRYPTO_AUTH_SEG_CFG_POS_BEFORE;
 		break;
 
+	case NSS_CRYPTO_REQ_TYPE_NONE:
+		/* Pure authentication is supported */
+		if (params->req_type == NSS_CRYPTO_REQ_TYPE_AUTH) {
+			encr_cfg &= ~CRYPTO_ENCR_SEG_CFG_ENC;
+			auth_cfg |= CRYPTO_AUTH_SEG_CFG_POS_BEFORE;
+			break;
+		} else {
+			nss_crypto_err("unknown request type = %d\n",
+				params->req_type);
+			return NSS_CRYPTO_STATUS_EINVAL;
+		}
+
 	default:
-		nss_crypto_err("unknown request type\n");
+		nss_crypto_err("unknown request type = %d\n", params->req_type);
 		return NSS_CRYPTO_STATUS_EINVAL;
 	}
 
@@ -802,6 +816,14 @@ static nss_crypto_status_t nss_crypto_update_idx_reqtype(struct nss_crypto_idx_i
 	 * check if the call is for resetting the state
 	 */
 	if (req_type == NSS_CRYPTO_REQ_TYPE_NONE) {
+		idx->req_type = req_type;
+		return NSS_CRYPTO_STATUS_OK;
+	}
+
+	/*
+	 * check if the call is for pure authentication
+	 */
+	if (req_type == NSS_CRYPTO_REQ_TYPE_AUTH) {
 		idx->req_type = req_type;
 		return NSS_CRYPTO_STATUS_OK;
 	}
