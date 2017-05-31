@@ -224,7 +224,7 @@ void nss_crypto_eip197_hw_setup_cache(void __iomem *base_addr)
 	 * reset hash collision bucket
 	 */
 	addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + NSS_CRYPTO_EIP197_FLOW_REC_END;
-	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_HASH_BUCKETS; i++)
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_FRC_HASH_BUCKETS; i++)
 		iowrite32(U32_MAX, addr + (0x4 * i));
 
 	/*
@@ -280,7 +280,7 @@ void nss_crypto_eip197_hw_setup_cache(void __iomem *base_addr)
 	 * reset hash collision bucket
 	 */
 	addr = base_addr + NSS_CRYPTO_EIP197_CS_RAM_START + NSS_CRYPTO_EIP197_TRANS_REC_END;
-	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_HASH_BUCKETS; i++)
+	for (i = 0; i < NSS_CRYPTO_EIP197_MAX_TRC_HASH_BUCKETS; i++)
 		iowrite32(U32_MAX, addr + (0x4 * i));
 
 	/*

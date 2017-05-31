@@ -170,7 +170,8 @@
  * Transform Record Cache(TRC) configuration data
  * Flow Record Cache(FRC) configuration data
  */
-#define NSS_CRYPTO_EIP197_MAX_HASH_BUCKETS 0x3c
+#define NSS_CRYPTO_EIP197_MAX_FRC_HASH_BUCKETS 0x3c
+#define NSS_CRYPTO_EIP197_MAX_TRC_HASH_BUCKETS 0x40
 #define NSS_CRYPTO_EIP197_MAX_FLOW_REC 0x1b
 #define NSS_CRYPTO_EIP197_MAX_TRANS_REC 0x1b
 #define NSS_CRYPTO_EIP197_RST_FLOW_REC 0x1
