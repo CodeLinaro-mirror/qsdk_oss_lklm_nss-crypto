@@ -283,6 +283,11 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 		sha_transform(out_digest, opad_key, tmp_digest);
 		break;
 
+	case SHA256_DIGEST_SIZE:
+		sha256_transform(in_digest, ipad_key);
+		sha256_transform(out_digest, opad_key);
+		break;
+
 	default:
 		nss_crypto_warn("%p:unsupported digest size(%zu)\n", data, digest_sz);
 		return -EINVAL;
