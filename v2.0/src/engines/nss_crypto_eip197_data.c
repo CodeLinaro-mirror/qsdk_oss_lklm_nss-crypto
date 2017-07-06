@@ -105,7 +105,7 @@ static void nss_crypto_eip197_hw_setup_core(void __iomem *base_addr)
 	/*
 	 * HIA MASTER BURST SIZE update
 	 */
-	iowrite32(NSS_CRYPTO_EIP197_HIA_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_MST_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_HIA_CFG, base_addr + NSS_CRYPTO_EIP197_MST_CTRL);
 
 	/*
 	 * Data Fetch Engine configuration
