@@ -120,6 +120,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 	},
+	[NSS_CRYPTO_CMN_ALGO_AES128_ECB] = {
+		.name = "qcom,aes128-ecb",
+		.cipher_key_len = AES_KEYSIZE_128,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = false,
+	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC] = {
 		.name = "qcom,aes192-cbc",
 		.cipher_key_len = AES_KEYSIZE_192,
@@ -136,6 +143,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 	},
+	[NSS_CRYPTO_CMN_ALGO_AES192_ECB] = {
+		.name = "qcom,aes192-ecb",
+		.cipher_key_len = AES_KEYSIZE_192,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = false,
+	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC] = {
 		.name = "qcom,aes256-cbc",
 		.cipher_key_len = AES_KEYSIZE_256,
@@ -149,6 +163,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_key_len = AES_KEYSIZE_256,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = false,
+	},
+	[NSS_CRYPTO_CMN_ALGO_AES256_ECB] = {
+		.name = "qcom,aes256-ecb",
+		.cipher_key_len = AES_KEYSIZE_256,
+		.cipher_blk_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
 	},
