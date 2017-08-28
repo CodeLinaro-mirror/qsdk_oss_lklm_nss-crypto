@@ -36,9 +36,17 @@
  */
 static void nss_crypto_debugfs_add_stats(struct dentry *parent, struct nss_crypto_cmn_stats *stats)
 {
+	int i;
+	char name[NSS_CRYPTO_DEBUGFS_NAME_SZ];
+
 	debugfs_create_u32("rx_packets", S_IRUGO, parent, &stats->nstats.rx_packets);
 	debugfs_create_u32("rx_bytes", S_IRUGO, parent, &stats->nstats.rx_bytes);
-	debugfs_create_u32("rx_dropped", S_IRUGO, parent, &stats->nstats.rx_dropped);
+
+	for (i = 0; i < ARRAY_SIZE(stats->nstats.rx_dropped); i++) {
+		scnprintf(name, NSS_CRYPTO_DEBUGFS_NAME_SZ, "rx_queue_%d_dropped", i);
+		debugfs_create_u32(name, S_IRUGO, parent, &stats->nstats.rx_dropped[i]);
+	}
+
 	debugfs_create_u32("tx_packets", S_IRUGO, parent, &stats->nstats.tx_packets);
 	debugfs_create_u32("tx_bytes", S_IRUGO, parent, &stats->nstats.tx_bytes);
 	debugfs_create_u32("fail_version", S_IRUGO, parent, &stats->fail_version);
