@@ -187,6 +187,11 @@ static int nss_crypto_eip197_clock_init(struct platform_device *pdev)
 	 * Parse clock frequency from crypto DTSI node
 	 */
 	prop = of_find_property(np, "clock-frequency", NULL);
+	if (!prop) {
+		nss_crypto_info("crypto clock frequency entry not found\n");
+		return 0;
+	}
+
 	size = prop->length / sizeof(*clk_rate);
 
 	clk_rate = kzalloc(size, GFP_KERNEL);

@@ -488,7 +488,7 @@ static int32_t crypto_bench_prep_op(void)
 	struct crypto_op *op = NULL;
 	uint32_t iv_hash_len;
 	uint16_t iv_len;
-	uint8_t *str;
+	uint8_t *str = "none";
 	int i = 0;
 	int status;
 
@@ -599,9 +599,10 @@ static int32_t crypto_bench_prep_op(void)
 			break;
 		}
 	}
+
 	crypto_bench_info("auth algo %s\n", str);
 
-	if ((data.algo < NSS_CRYPTO_CMN_ALGO_NULL) && (data.algo > NSS_CRYPTO_CMN_ALGO_MAX - 1))
+	if ((data.algo < NSS_CRYPTO_CMN_ALGO_NULL) && (data.algo >= NSS_CRYPTO_CMN_ALGO_MAX))
 		return CRYPTO_BENCH_NOT_OK;
 
 	for (i = 0; i < param.max_sids; i++) {
@@ -650,9 +651,9 @@ static int32_t crypto_bench_prep_op(void)
 		op->hash_offset = op->data_len;
 
 		if (param.ciph_type <= 2)
-			memcpy(op->data_vaddr + op->iv_offset, cipher_iv, iv_len);
+			memcpy(op->data_vaddr + op->iv_offset, cipher_iv, sizeof(cipher_iv));
 		else
-			memcpy(op->data_vaddr + op->iv_offset, triple_des_cipher_iv, iv_len);
+			memcpy(op->data_vaddr + op->iv_offset, triple_des_cipher_iv, sizeof(triple_des_cipher_iv));
 
 		memcpy(op->data_vaddr + op->cipher_skip, data_ptr, op->cipher_len);
 
@@ -703,9 +704,9 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	iv_addr = nss_crypto_hdr_get_iv(ch);
 
 	if (param.ciph_type == 3)
-		memcpy(iv_addr, triple_des_cipher_iv, iv_len);
+		memcpy(iv_addr, triple_des_cipher_iv, sizeof(triple_des_cipher_iv));
 	else
-		memcpy(iv_addr, cipher_iv, iv_len);
+		memcpy(iv_addr, cipher_iv, sizeof(cipher_iv));
 
 	op->ch = ch;
 	op->failed = false;

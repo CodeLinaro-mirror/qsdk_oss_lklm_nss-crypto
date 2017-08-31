@@ -1044,7 +1044,7 @@ void nss_crypto_user_free(struct kref *ref)
 	 * user has dropped to zero protects this list from being
 	 * accessed by any other legitimate caller
 	 */
-	while (skb_queue_empty(sk_head))
+	while (!skb_queue_empty(sk_head))
 		dev_kfree_skb_any(__skb_dequeue(sk_head));
 
 	vfree(user);
