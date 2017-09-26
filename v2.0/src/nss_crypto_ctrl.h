@@ -44,6 +44,7 @@ struct nss_crypto_algo_info {
 	uint16_t auth_key_len;			/* authentication key length */
 	uint16_t cipher_blk_len;		/* cipher block len */
 	uint16_t iv_len;			/* iv len */
+	uint16_t digest_sz;			/* digest size */
 	uint16_t auth_blk_len;			/* authentication block size */
 	uint32_t *auth_fips_iv;			/* authentication fips iv */
 	bool cipher_valid;			/* algorithm supports cipher mode */

@@ -320,7 +320,7 @@ static struct crypto_bench_param def_param = {
 	.bam_len = 256,
 	.op_dir = 1,
 	.ciph_type = 1,
-	.algo_type = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA1_HMAC,
+	.algo_type = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC,
 	.op_type = 3,
 	.bam_align = 4,
 	.num_reqs = 128,
@@ -339,7 +339,7 @@ static struct crypto_bench_param param = {
 	.bam_len = 256,
 	.op_dir = 1,
 	.ciph_type = 1,
-	.algo_type = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA1_HMAC,
+	.algo_type = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC,
 	.op_type = 3,
 	.bam_align = 4,
 	.num_reqs = 128,
@@ -511,9 +511,9 @@ static int32_t crypto_bench_prep_op(void)
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES128_GCM_GMAC;
 			str = "AES128_GCM_GMAC";
 			break;
-		case NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA1_HMAC:
-			data.algo = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA1_HMAC;
-			str = "AES128_CBC_SHA1_HMAC";
+		case NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC:
+			data.algo = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC;
+			str = "AES128_CBC_SHA160_HMAC";
 			break;
 		case NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA256_HMAC:
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA256_HMAC;
@@ -523,9 +523,9 @@ static int32_t crypto_bench_prep_op(void)
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES192_GCM_GMAC;
 			str = "AES192_GCM_GMAC";
 			break;
-		case NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA1_HMAC:
-			data.algo = NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA1_HMAC;
-			str = "AES192_CBC_SHA1_HMAC";
+		case NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC:
+			data.algo = NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC;
+			str = "AES192_CBC_SHA160_HMAC";
 			break;
 		case NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA256_HMAC:
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA256_HMAC;
@@ -535,17 +535,17 @@ static int32_t crypto_bench_prep_op(void)
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES128_GCM_GMAC;
 			str = "AES256_GCM_GMAC";
 			break;
-		case NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA1_HMAC:
-			data.algo = NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA1_HMAC;
-			str = "AES256_CBC_SHA1_HMAC";
+		case NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC:
+			data.algo = NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC;
+			str = "AES256_CBC_SHA160_HMAC";
 			break;
 		case NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA256_HMAC:
 			data.algo = NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA256_HMAC;
 			str = "AES256_CBC_SHA256_HMAC";
 			break;
-		case NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA1_HMAC:
-			data.algo = NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA1_HMAC;
-			str = "3DES_CBC_SHA1_HMAC";
+		case NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC:
+			data.algo = NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC;
+			str = "3DES_CBC_SHA160_HMAC";
 			break;
 		case NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA256_HMAC:
 			data.algo = NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA256_HMAC;
@@ -586,9 +586,9 @@ static int32_t crypto_bench_prep_op(void)
 			data.algo = NSS_CRYPTO_CMN_ALGO_MD5_HMAC;
 			str = "MD5_HMAC";
 			break;
-		case NSS_CRYPTO_CMN_ALGO_SHA1_HMAC:
-			data.algo = NSS_CRYPTO_CMN_ALGO_SHA1_HMAC;
-			str = "SHA1_HMAC";
+		case NSS_CRYPTO_CMN_ALGO_SHA160_HMAC:
+			data.algo = NSS_CRYPTO_CMN_ALGO_SHA160_HMAC;
+			str = "SHA160_HMAC";
 			break;
 		case NSS_CRYPTO_CMN_ALGO_SHA256_HMAC:
 			data.algo = NSS_CRYPTO_CMN_ALGO_SHA256_HMAC;
@@ -678,13 +678,15 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	int num_frag;
 	uint16_t tot_len;
 	uint16_t fixed_size;
+	bool ahash = (op->op_dir == NSS_CRYPTO_OP_DIR_AUTH);
 
 	iv_len = (param.ciph_type <= 2) ? NSS_CRYPTO_MAX_IVLEN_AES : NSS_CRYPTO_MAX_IVLEN_DES;
-	icv_len = 12;
+	icv_len = param.hash_len;
+
 	sg_init_one(&src, op->data_vaddr, op->data_len);
 	num_frag = sg_nents(&src);
 
-	ch = nss_crypto_hdr_alloc(crypto_hdl, crypto_sid[curr_sid], num_frag, iv_len);
+	ch = nss_crypto_hdr_alloc(crypto_hdl, crypto_sid[curr_sid], num_frag, iv_len, icv_len, ahash);
 	if (ch == NULL) {
 		crypto_bench_error("UNABLE TO ALLOCATE CRYPTO BUFFER\n");
 		return CRYPTO_BENCH_NOT_OK;
@@ -692,7 +694,6 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 
 	nss_crypto_hdr_set_skip(ch, op->cipher_skip);
 	nss_crypto_hdr_set_op(ch, op->op_dir);
-	nss_crypto_hdr_set_hmac_len(ch, 12);
 
 	nss_crypto_hdr_map_sglist(ch, &src);
 
@@ -740,8 +741,7 @@ void crypto_bench_mcmp(void)
 		encr_res = memcmp(op->data_vaddr + op->cipher_skip, encr_text, op->cipher_len);
 		param.mcmp_encr = param.mcmp_encr + !!(encr_res);
 
-		if ((param.op_type == 3) ||
-				(param.op_type == 2)) {
+		if ((param.op_type == 3) || (param.op_type == 2)) {
 			hash_res = memcmp(op->data_vaddr + op->hash_offset, hash_text, param.hash_len);
 			param.mcmp_hash = param.mcmp_hash + !!(hash_res);
 		}

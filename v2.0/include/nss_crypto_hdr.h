@@ -158,11 +158,14 @@ struct nss_crypto_buf {
  * @param[in] user user handler
  * @param[in] num_frags no. of scatter/gather fragments
  * @param[in] iv_len length of the IV
+ * @param[in] hmac_len length of HMAC
+ * @param[in] ahash AHASH mode or not
  *
  * @return
  * Pointer to the start of the header.
  */
-struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32_t session,					uint8_t num_frags, uint16_t iv_len);
+struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32_t session,
+				uint8_t num_frags, uint8_t iv_len, uint8_t hmac_len, bool ahash);
 
 /**
  * nss_crypto_hdr_free
@@ -194,6 +197,22 @@ void nss_crypto_hdr_free(struct nss_crypto_user *user, struct nss_crypto_hdr *ch
  * None.
  */
 void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *src);
+
+/*
+ * nss_crypto_hdr_map_sglist_ahash
+ *	map an HASH/HMAC SGLIST into header fragments
+ *
+ * @datatype
+ * nss_crypto_hdr
+ * scatterlist
+ *
+ * @param[in] ch crypto header
+ * @param[in] src SGLIST list
+
+ * @return
+ * None.
+ */
+void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterlist *src);
 
 /*
  * nss_crypto_hdr_map_skb
@@ -267,24 +286,6 @@ static inline void nss_crypto_hdr_set_op(struct nss_crypto_hdr *ch, enum nss_cry
 static inline enum nss_crypto_resp_error nss_crypto_hdr_get_error(struct nss_crypto_hdr *ch)
 {
 	return ch->error;
-}
-
-/**
- * nss_crypto_hdr_set_hmac_len
- *	set the hmac length
- *
- * @datatype
- * nss_crypto_hdr
- *
- * @param[in] ch crypto header
- * @param[in] hmac_len length of HMAC
- *
- * @return
- * None.
- */
-static inline void nss_crypto_hdr_set_hmac_len(struct nss_crypto_hdr *ch, uint8_t hmac_len)
-{
-	ch->hmac_len = hmac_len;
 }
 
 /**

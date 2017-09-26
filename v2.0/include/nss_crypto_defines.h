@@ -16,6 +16,7 @@
 #define __NSS_CRYPTO_DEFINES_H
 
 #define NSS_CRYPTO_NAME_MAX 128 /* bytes */
+#define NSS_CRYPTO_SESSION_MAX U32_MAX
 
 /**
  * nss_crypto_op_dir

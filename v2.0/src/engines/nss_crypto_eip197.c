@@ -69,11 +69,27 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 				NSS_CRYPTO_EIP197_CTX_SIZE_11WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CTR,
 	},
-	[NSS_CRYPTO_CMN_ALGO_SHA1_HMAC] = {
-		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 |
-			NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC | NSS_CRYPTO_EIP197_CTX_SIZE_12WORDS,
+	[NSS_CRYPTO_CMN_ALGO_SHA160_HASH] = {
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
+			NSS_CRYPTO_EIP197_CTX_SIZE_10WORDS,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_SHA224_HASH] = {
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA224 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
+			NSS_CRYPTO_EIP197_CTX_SIZE_14WORDS,
+	},
+	[NSS_CRYPTO_CMN_ALGO_SHA256_HASH] = {
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA256 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
+			NSS_CRYPTO_EIP197_CTX_SIZE_18WORDS,
+	},
+	[NSS_CRYPTO_CMN_ALGO_SHA160_HMAC] = {
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
+			NSS_CRYPTO_EIP197_CTX_SIZE_10WORDS,
+	},
+	[NSS_CRYPTO_CMN_ALGO_SHA256_HMAC] = {
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA256 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
+			NSS_CRYPTO_EIP197_CTX_SIZE_18WORDS,
+	},
+	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES128 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_16WORDS,
@@ -85,7 +101,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_22WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CBC,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES128 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_17WORDS,
@@ -97,7 +113,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_23WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CTR,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES192 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_18WORDS,
@@ -109,7 +125,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_24WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CBC,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES192 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_19WORDS,
@@ -121,7 +137,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_25WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CTR,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES256 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_20WORDS,
@@ -133,7 +149,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_26WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CBC,
 	},
-	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_AES256 |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_21WORDS,
@@ -145,7 +161,7 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_SIZE_27WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CTR,
 	},
-	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA1_HMAC] = {
+	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_WITH_KEY | NSS_CRYPTO_EIP197_CTX_ALGO_3DES |
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_18WORDS,
@@ -281,7 +297,7 @@ static void nss_crypto_eip197_ring_init(void __iomem *base_addr, uint32_t in_pad
  *	Precomputing the first pass of the digest.
  *
  * Note: this is essentially recommended by the HW to
- * pre-coumpute the first pass of the digest using the
+ * pre-compute the first pass of the digest using the
  * fixed set of the information. This requires producing
  * the first pass of the hash with the authentication key
  * and values suggested for HMAC computation. The HW requires
@@ -298,7 +314,7 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 	void *mem;
 	int i;
 
-	digest_sz = ctx->info->auth_key_len;
+	digest_sz = ctx->info->digest_sz;
 	block_sz = ctx->info->auth_blk_len;
 
 	/*
@@ -316,7 +332,11 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 	opad_key = ipad_key + block_sz;
 	hash_key = opad_key + block_sz;
 
-	memcpy(hash_key, key, digest_sz);
+	/*
+	 * Copy key for keyed hash algorithms
+	 */
+	if (key)
+		memcpy(hash_key, key, digest_sz);
 
 	/*
 	 * Compute initial fixed hash values as suggested by RFC2104
@@ -337,11 +357,14 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 	case SHA1_DIGEST_SIZE:
 		sha_transform(in_digest, ipad_key, tmp_digest);
 		sha_transform(out_digest, opad_key, tmp_digest);
+
 		break;
 
+	case SHA224_DIGEST_SIZE:
 	case SHA256_DIGEST_SIZE:
 		sha256_transform(in_digest, ipad_key);
 		sha256_transform(out_digest, opad_key);
+
 		break;
 
 	default:
@@ -462,6 +485,12 @@ int nss_crypto_eip197_ctx_fill(struct nss_crypto_ctx *ctx, struct nss_crypto_ses
 
 	cipher_key_words = ctx->info->cipher_key_len / sizeof(uint32_t);
 	auth_key_words = ctx->info->auth_key_len / sizeof(uint32_t);
+
+	/*
+	 * Handling non-keyed hash algorithms
+	 */
+	if (ctx->info->auth_valid && !auth_key_words)
+		auth_key_words = ctx->info->digest_sz / sizeof(uint32_t);
 
 	msg->words = cipher_key_words + (auth_key_words * 2) + NSS_CRYPTO_EIP197_MAX_CTRL;
 	msg->flags = NSS_CRYPTO_CMN_CTX_FLAGS_SPARE0 | NSS_CRYPTO_CMN_CTX_FLAGS_SPARE1;
