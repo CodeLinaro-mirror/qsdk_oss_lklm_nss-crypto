@@ -31,22 +31,31 @@
 #define NSS_CRYPTO_DEBUGFS_NAME_SZ 128 /* bytes */
 
 /*
+ * nss_crypto_debugs_add_node_stats()
+ *	Creates debugs entries for common statistics
+ *
+ * crypto will use only queue0, hence we capture dropped
+ * statistics only for queue0.
+ */
+static void nss_crypto_debugfs_add_node_stats(struct dentry *parent, struct nss_crypto_cmn_stats *stats)
+{
+	debugfs_create_u32("completed", S_IRUGO, parent, &stats->nstats.rx_packets);
+	debugfs_create_u32("processed", S_IRUGO, parent, &stats->nstats.tx_packets);
+	debugfs_create_u32("dropped", S_IRUGO, parent, &stats->nstats.rx_dropped[0]);
+}
+
+/*
  * nss_crypto_debugs_add_stats()
  *	Creates debugs entries for common statistics
+ *
+ * crypto will use only queue0, hence we capture dropped
+ * statistics only for queue0.
  */
-static void nss_crypto_debugfs_add_stats(struct dentry *parent, struct nss_crypto_cmn_stats *stats)
+static void nss_crypto_debugfs_add_ctx_stats(struct dentry *parent, struct nss_crypto_cmn_stats *stats)
 {
-	int i;
-	char name[NSS_CRYPTO_DEBUGFS_NAME_SZ];
-
 	debugfs_create_u32("rx_packets", S_IRUGO, parent, &stats->nstats.rx_packets);
 	debugfs_create_u32("rx_bytes", S_IRUGO, parent, &stats->nstats.rx_bytes);
-
-	for (i = 0; i < ARRAY_SIZE(stats->nstats.rx_dropped); i++) {
-		scnprintf(name, NSS_CRYPTO_DEBUGFS_NAME_SZ, "rx_queue_%d_dropped", i);
-		debugfs_create_u32(name, S_IRUGO, parent, &stats->nstats.rx_dropped[i]);
-	}
-
+	debugfs_create_u32("rx_dropped", S_IRUGO, parent, &stats->nstats.rx_dropped[0]);
 	debugfs_create_u32("tx_packets", S_IRUGO, parent, &stats->nstats.tx_packets);
 	debugfs_create_u32("tx_bytes", S_IRUGO, parent, &stats->nstats.tx_bytes);
 	debugfs_create_u32("fail_version", S_IRUGO, parent, &stats->fail_version);
@@ -74,31 +83,7 @@ void nss_crypto_debugfs_add_node(struct nss_crypto_node *node, struct dentry *ro
 	/*
 	 * create node stats files
 	 */
-	nss_crypto_debugfs_add_stats(node->dentry, &node->stats);
-}
-
-/*
- * nss_crypto_debugfs_add_engine()
- *	Creates per engine debugfs entries
- */
-void nss_crypto_debugfs_add_engine(struct nss_crypto_engine *eng, struct dentry *root)
-{
-	char buf[NSS_CRYPTO_DEBUGFS_NAME_SZ] = {0};
-
-	if (!root)
-		return;
-
-	scnprintf(buf, sizeof(buf), "engine-0x%x", eng->id);
-
-	eng->dentry = debugfs_create_dir(buf, root);
-	if (!eng->dentry)
-		return;
-
-	/*
-	 * create engine stats files
-	 */
-	nss_crypto_debugfs_add_stats(eng->dentry, &eng->stats);
-
+	nss_crypto_debugfs_add_node_stats(node->dentry, &node->stats);
 }
 
 /*
@@ -115,7 +100,7 @@ void nss_crypto_debugfs_add_ctx(struct nss_crypto_ctx *ctx, struct dentry *root)
 	if (ctx->algo > NSS_CRYPTO_CMN_ALGO_MAX)
 		return;
 
-	scnprintf(buf, sizeof(buf), "session-%d", ctx->idx);
+	scnprintf(buf, sizeof(buf), "ctx%d", ctx->idx);
 
 	ctx->dentry = debugfs_create_dir(buf, root);
 	if (!ctx->dentry)
@@ -129,7 +114,7 @@ void nss_crypto_debugfs_add_ctx(struct nss_crypto_ctx *ctx, struct dentry *root)
 	/*
 	 * create context stats files
 	 */
-	nss_crypto_debugfs_add_stats(ctx->dentry, &ctx->stats);
+	nss_crypto_debugfs_add_ctx_stats(ctx->dentry, &ctx->stats);
 }
 
 /*

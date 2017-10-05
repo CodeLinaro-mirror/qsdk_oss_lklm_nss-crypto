@@ -150,9 +150,6 @@ struct nss_crypto_engine {
 
 	phys_addr_t crypto_paddr;		/* starting physical address of Crypto regs */
 	void __iomem *crypto_vaddr;		/* starting virtual address of Crypto regs */
-
-	struct dentry *dentry;			/* entry for engine stats */
-	struct nss_crypto_cmn_stats stats;	/* engine stats */
 };
 
 /*

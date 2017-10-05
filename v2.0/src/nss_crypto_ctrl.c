@@ -452,7 +452,6 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 {
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	struct nss_crypto_cmn_stats *stats;
-	struct nss_crypto_engine *eng;
 	struct nss_crypto_node *node;
 	struct nss_crypto_ctx *ctx;
 	bool process = false;
@@ -479,16 +478,6 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 	switch (nim->cm.type) {
 	case NSS_CRYPTO_CMN_MSG_TYPE_SYNC_NODE_STATS:
 		memcpy(&node->stats, stats, sizeof(node->stats));
-		break;
-
-	case NSS_CRYPTO_CMN_MSG_TYPE_SYNC_ENG_STATS:
-		list_for_each_entry(eng, &node->eng_head, list) {
-			if (nim->uid == eng->id) {
-				memcpy(&eng->stats, stats, sizeof(eng->stats));
-				break;
-			}
-		}
-
 		break;
 
 	case NSS_CRYPTO_CMN_MSG_TYPE_SYNC_CTX_STATS:
@@ -710,7 +699,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	ctx->free_timeout = user->ctx.timeout_ticks;
 	INIT_DELAYED_WORK(&ctx->free_work, nss_crypto_delayed_free);
 
-	nss_crypto_debugfs_add_ctx(ctx, ctrl->dentry);
+	nss_crypto_debugfs_add_ctx(ctx, node->dentry);
 
 	*session = idx;
 	return 0;
@@ -886,7 +875,6 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 	 * debugfs entry
 	 */
 	list_add_tail(&eng->list, &node->eng_head);
-	nss_crypto_debugfs_add_engine(eng, node->dentry);
 
 	return 0;
 }
@@ -923,9 +911,6 @@ void nss_crypto_engine_free(struct nss_crypto_engine *eng)
 		nss_crypto_dma_free(eng, dma);
 
 	list_del(&eng->list);
-
-	if (eng->dentry)
-		debugfs_remove_recursive(eng->dentry);
 
 	/*
 	 * unmap previously mapped addresses
