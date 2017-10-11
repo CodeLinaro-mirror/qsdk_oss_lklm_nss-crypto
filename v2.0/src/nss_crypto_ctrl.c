@@ -386,6 +386,25 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 };
 
 /*
+ * nss_crypto_ctrl_stats_init
+ *	Initialize control stats in crypto control
+ */
+static void nss_crypto_ctrl_stats_init(struct nss_crypto_ctrl_stats *stats)
+{
+	atomic_set(&stats->alloc, 0);
+	atomic_set(&stats->alloc_fail_node, 0);
+	atomic_set(&stats->alloc_fail_nomem, 0);
+	atomic_set(&stats->alloc_fail_nospace, 0);
+	atomic_set(&stats->alloc_fail_noalgo, 0);
+	atomic_set(&stats->alloc_fail_noresp, 0);
+	atomic_set(&stats->free, 0);
+	atomic_set(&stats->free_fail_msg, 0);
+	atomic_set(&stats->free_fail_inuse, 0);
+	atomic_set(&stats->free_fail_queue, 0);
+	atomic_set(&stats->free_fail_retry, 0);
+}
+
+/*
  * nss_crypto_get_cipher_block_len()
  *	Return the cipher block len associated with the index
  */
@@ -436,11 +455,14 @@ EXPORT_SYMBOL(nss_crypto_get_iv_len);
 void nss_crypto_ctx_free(struct kref *ref)
 {
 	struct nss_crypto_ctx *ctx = container_of(ref, struct nss_crypto_ctx, ref);
+	struct nss_crypto_ctrl *ctrl = &g_control;
 
 	if (ctx->dentry)
 		debugfs_remove_recursive(ctx->dentry);
 
 	memset(ctx, 0, sizeof(*ctx));
+
+	atomic_inc(&ctrl->cstats.free);
 }
 EXPORT_SYMBOL(nss_crypto_ctx_free);
 
@@ -540,6 +562,7 @@ void nss_crypto_delayed_free(struct work_struct *work)
 	 * will happen if the NSS crypto context has outstanding packets
 	 */
 	if (ctx->nim.cm.response != NSS_CMN_RESPONSE_ACK) {
+		atomic_inc(&ctrl->cstats.free_fail_retry);
 		ctx->nim.cm.type = NSS_CRYPTO_CMN_MSG_TYPE_VERIFY_CTX;
 		schedule_delayed_work(&ctx->free_work, ctx->free_timeout);
 		return;
@@ -573,6 +596,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 
 	if (data->algo > NSS_CRYPTO_CMN_ALGO_MAX) {
 		nss_crypto_warn("%p: invalid configuration (algo - %d)\n", user, data->algo);
+		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
 		return -ERANGE;
 	}
 
@@ -603,8 +627,10 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	/*
 	 * if there is nothing available indicate it to the caller
 	 */
-	if (idx == ctrl->max_contexts)
+	if (idx == ctrl->max_contexts) {
+		atomic_inc(&ctrl->cstats.alloc_fail_nospace);
 		return -ENOSPC;
+	}
 
 	/*
 	 * Walk through each node and call node specific context fill routine
@@ -623,8 +649,10 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 		}
 	}
 
-	if (!found)
+	if (!found) {
+		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
 		return -ENOENT;
+	}
 
 	/*
 	 * We will allocate memory of ctx_words size and pass it to
@@ -636,6 +664,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	vaddr = kzalloc(ctx_sz + SMP_CACHE_BYTES, GFP_KERNEL);
 	if (!vaddr) {
 		nss_crypto_warn("%p: unable to allocate HW context(%zu)\n", user, ctx_sz);
+		atomic_inc(&ctrl->cstats.alloc_fail_nomem);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
 		return -ENOMEM;
 	}
@@ -659,6 +688,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 */
 	error = node->fill_ctx(ctx, data, msg, hw_ctx);
 	if (error < 0) {
+		atomic_inc(&ctrl->cstats.alloc_fail_node);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
 		kfree(vaddr);
 		return error;
@@ -690,8 +720,11 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	if (status != NSS_TX_SUCCESS) {
 		nss_crypto_warn("%p: unable to send(%d), status(%d), response(%d), error(%d)\n",
 				ctx, nim.cm.type, status, nim.cm.response, nim.cm.error);
+		atomic_inc(&ctrl->cstats.alloc_fail_noresp);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
-		goto free;
+		dma_unmap_single(node->dev, msg->addr, ctx_sz, DMA_FROM_DEVICE);
+		kfree(vaddr);
+		return -EBUSY;
 	}
 
 	dma_unmap_single(node->dev, msg->addr, ctx_sz, DMA_FROM_DEVICE);
@@ -703,15 +736,15 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	ctx->free_timeout = user->ctx.timeout_ticks;
 	INIT_DELAYED_WORK(&ctx->free_work, nss_crypto_delayed_free);
 
+	/*
+	 * create context debugfs entry
+	 */
 	nss_crypto_debugfs_add_ctx(ctx, node->dentry);
+
+	atomic_inc(&ctrl->cstats.alloc);
 
 	*session = idx;
 	return 0;
-
-free:
-	dma_unmap_single(node->dev, msg->addr, ctx_sz, DMA_FROM_DEVICE);
-	kfree(vaddr);
-	return -EINVAL;
 }
 EXPORT_SYMBOL(nss_crypto_session_alloc);
 
@@ -731,6 +764,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	ctx = &ctrl->ctx_tbl[idx];
 	if (!kref_get_unless_zero(&ctx->ref)) {
 		mutex_unlock(&ctrl->mutex);
+		atomic_inc(&ctrl->cstats.free_fail_inuse);	/**< Sessions freed queue congested */
 		nss_crypto_warn("%p: session id(%d) not in use\n", user, idx);
 		return;
 	}
@@ -944,6 +978,7 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	}
 
 	list_add(&node->list, &ctrl->node_head);
+
 	nss_crypto_debugfs_add_node(node, ctrl->dentry, node->ndev->name);
 
 	node->nss_data_hdl = nss_crypto_cmn_data_register(node->nss_ifnum,
@@ -1218,6 +1253,12 @@ static int nss_crypto_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	/*
+	 * Add control debugfs and reset control stats
+	 */
+	nss_crypto_debugfs_add_control(ctrl);
+	nss_crypto_ctrl_stats_init(&ctrl->cstats);
+
 	INIT_LIST_HEAD(&ctrl->node_head);
 	platform_set_drvdata(pdev, ctrl);
 
@@ -1231,6 +1272,9 @@ static int nss_crypto_probe(struct platform_device *pdev)
 static int nss_crypto_remove(struct platform_device *pdev)
 {
 	struct nss_crypto_ctrl *ctrl = platform_get_drvdata(pdev);
+
+	if (ctrl->ctrl_dentry)
+		debugfs_remove_recursive(ctrl->ctrl_dentry);
 
 	if (ctrl->ctx_tbl)
 		vfree(ctrl->ctx_tbl);
