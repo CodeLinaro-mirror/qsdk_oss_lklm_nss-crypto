@@ -522,12 +522,13 @@ void nss_crypto_delayed_free(struct work_struct *work)
 	 * in use and will not be allocated to any other user
 	 */
 	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &ctx->nim);
-	if (status == NSS_TX_FAILURE_QUEUE) {
+	switch (status) {
+	case NSS_TX_FAILURE_QUEUE:
 		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_TX_RETRY_TICKS);
 		return;
-	} else if (status != NSS_TX_SUCCESS) {
-		nss_crypto_warn("%p: unable to communicate with NSS(%d)\n", ctx, status);
-		return;
+
+	default:
+		BUG_ON(1);
 	}
 
 	/*
@@ -737,7 +738,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	nss_cmn_msg_init(&ctx->nim.cm, ctx->nss_ifnum, type, sizeof(ctx->nim) - sizeof(ctx->nim.cm), NULL, ctx);
 	ctx->nim.msg.ctx.index = idx;
 
-	schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_TX_RETRY_TICKS);
+	schedule_delayed_work(&ctx->free_work, ctx->free_timeout);
 }
 EXPORT_SYMBOL(nss_crypto_session_free);
 
