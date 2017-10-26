@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,6 +30,223 @@
 #include "nss_crypto_hlos.h"
 #include "nss_crypto_ctrl.h"
 #include <engines/nss_crypto_eip197.h>
+
+#define NSS_CRYPTO_EIP197_MAX_STR_LENGTH 64
+#define NSS_CRYPTO_EIP197_NEW_LINE 16
+
+#define NSS_CRYPTO_EIP197_REG_DUMP_SZ \
+	((2 + NSS_CRYPTO_EIP197_NEW_LINE) * NSS_CRYPTO_EIP197_MAX_STR_LENGTH)
+		/* name of the register and value stored in the register */
+
+/*
+ * nss_crypto_eip197_regmap
+ *	Structure for eip197 register dump
+ */
+struct nss_crypto_eip197_regmap {
+	const uint8_t *name;
+	uint32_t offset;	/* Register offset with respect to EIP197 Base */
+};
+
+/*
+ * g_dma_reg_map
+ *	Entries for DMA register dump
+ */
+struct nss_crypto_eip197_regmap g_dma_reg_map[] = {
+	{.name = "cmd_prep_count", .offset = NSS_CRYPTO_EIP197_HIA_CDR_COUNT(0)},
+	{.name = "cmd_proc_count", .offset = NSS_CRYPTO_EIP197_HIA_CDR_PROC_COUNT(0)},
+	{.name = "cmd_prep_ptr", .offset = NSS_CRYPTO_EIP197_HIA_CDR_PREP_PNTR(0)},
+	{.name = "cmd_proc_ptr", .offset = NSS_CRYPTO_EIP197_HIA_CDR_PROC_PNTR(0)},
+	{.name = "cmd_dma_error", .offset = NSS_CRYPTO_EIP197_HIA_CDR_STAT(0)},
+	{.name = "res_prep_count", .offset = NSS_CRYPTO_EIP197_HIA_RDR_COUNT(0)},
+	{.name = "res_proc_count", .offset = NSS_CRYPTO_EIP197_HIA_RDR_PROC_COUNT(0)},
+	{.name = "res_prep_ptr", .offset = NSS_CRYPTO_EIP197_HIA_RDR_PREP_PNTR(0)},
+	{.name = "res_proc_ptr", .offset = NSS_CRYPTO_EIP197_HIA_RDR_PROC_PNTR(0)},
+	{.name = "res_dma_error", .offset = NSS_CRYPTO_EIP197_HIA_RDR_STAT(0)},
+};
+
+/*
+ * g_hia_reg_map
+ *	Entries for HIA register dump
+ */
+struct nss_crypto_eip197_regmap g_hia_reg_map[] = {
+	{.name = "data_fetch_dma_err", .offset = NSS_CRYPTO_EIP197_HIA_DFE_THR_STAT},
+	{.name = "data_store_dma_err", .offset = NSS_CRYPTO_EIP197_HIA_DSE_THR_STAT},
+	{.name = "la_cmd_dma_err", .offset = NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_LO},
+	{.name = "la_cmd_res_err", .offset = NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_HI},
+	{.name = "hia_timeout_err", .offset = NSS_CRYPTO_EIP197_HIA_MST_TIMEOUT_ERR},
+	{.name = "axi_err", .offset = NSS_CRYPTO_EIP197_HIA_MST_CTRL},
+};
+
+/*
+ * g_pe_reg_map
+ *	Entries for PE register dump
+ */
+struct nss_crypto_eip197_regmap g_pe_reg_map[] = {
+	{.name = "ipue_ctrl", .offset = NSS_CRYPTO_EIP197_PE_ICE_PUE_CTRL},
+	{.name = "ipue_debug", .offset = NSS_CRYPTO_EIP197_PE_ICE_PUE_DBG},
+	{.name = "ifpp_ctrl", .offset = NSS_CRYPTO_EIP197_PE_ICE_FPP_CTRL},
+	{.name = "ifpp_debug", .offset = NSS_CRYPTO_EIP197_PE_ICE_FPP_DBG},
+	{.name = "contex_error", .offset = NSS_CRYPTO_EIP197_PE_EIP96_CONTEXT_CTRL},
+	{.name = "opue_ctrl", .offset = NSS_CRYPTO_EIP197_PE_OCE_PUE_CTRL},
+	{.name = "opue_debug", .offset = NSS_CRYPTO_EIP197_PE_OCE_PUE_DBG},
+	{.name = "ofpp_ctrl", .offset = NSS_CRYPTO_EIP197_PE_OCE_FPP_CTRL},
+	{.name = "ofpp_debug", .offset = NSS_CRYPTO_EIP197_PE_OCE_FPP_DBG},
+	{.name = "current_iv0", .offset = NSS_CRYPTO_EIP197_PE_IV0},
+	{.name = "current_iv1", .offset = NSS_CRYPTO_EIP197_PE_IV1},
+	{.name = "current_iv2", .offset = NSS_CRYPTO_EIP197_PE_IV2},
+	{.name = "current_iv3", .offset = NSS_CRYPTO_EIP197_PE_IV3},
+#if defined(NSS_CRYPTO_DEBUG_KEYS)
+	{.name = "cipher_key0", .offset = NSS_CRYPTO_EIP197_PE_KEY0},
+	{.name = "cipher_key1", .offset = NSS_CRYPTO_EIP197_PE_KEY1},
+	{.name = "cipher_key2", .offset = NSS_CRYPTO_EIP197_PE_KEY2},
+	{.name = "cipher_key3", .offset = NSS_CRYPTO_EIP197_PE_KEY3},
+	{.name = "cipher_key4", .offset = NSS_CRYPTO_EIP197_PE_KEY4},
+	{.name = "cipher_key5", .offset = NSS_CRYPTO_EIP197_PE_KEY5},
+	{.name = "cipher_key6", .offset = NSS_CRYPTO_EIP197_PE_KEY6},
+	{.name = "cipher_key7", .offset = NSS_CRYPTO_EIP197_PE_KEY7},
+	{.name = "auth_ipad0", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST0},
+	{.name = "auth_ipad1", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST1},
+	{.name = "auth_ipad2", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST2},
+	{.name = "auth_ipad3", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST3},
+	{.name = "auth_ipad4", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST4},
+	{.name = "auth_ipad5", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST5},
+	{.name = "auth_ipad6", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST6},
+	{.name = "auth_ipad7", .offset = NSS_CRYPTO_EIP197_PE_IDIGEST7},
+	{.name = "auth_opad0", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST0},
+	{.name = "auth_opad1", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST1},
+	{.name = "auth_opad2", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST2},
+	{.name = "auth_opad3", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST3},
+	{.name = "auth_opad4", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST4},
+	{.name = "auth_opad5", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST5},
+	{.name = "auth_opad6", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST6},
+	{.name = "auth_opad7", .offset = NSS_CRYPTO_EIP197_PE_ODIGEST7},
+#endif
+	{.name = "trc_dma_read_err", .offset = NSS_CRYPTO_EIP197_TRC_PARAMS},
+	{.name = "trc_dma_wr_err", .offset = NSS_CRYPTO_EIP197_TRC_PARAMS},
+};
+
+/*
+ * nss_crypto_eip197_read_dma_reg()
+ *	Regdump for Command and Result Descriptor Ring
+ */
+ssize_t nss_crypto_eip197_read_dma_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos)
+{
+	struct nss_crypto_engine *eng = filep->private_data;
+	struct nss_crypto_node *node = eng->node;
+	int max_dma_ring = hweight32(node->dma_mask);
+	void *base_addr = eng->crypto_vaddr;
+	ssize_t max_buf_len, ret;
+	int i, ring_id = 0;
+	size_t len = 0;
+	uint32_t val;
+	char *buf;
+
+	/*
+	 * (Lines of output) * (Max string length)
+	 */
+	max_buf_len = ARRAY_SIZE(g_dma_reg_map) * NSS_CRYPTO_EIP197_REG_DUMP_SZ * max_dma_ring;
+
+	buf = vzalloc(max_buf_len);
+	if (!buf) {
+		nss_crypto_warn("Failed to allocate memory for statistic buffer");
+		return 0;
+	}
+
+	/*
+	 * We will dump debugfs entry for all the dma rings available
+	 */
+	for ( ; ring_id < max_dma_ring; ring_id++) {
+		/*
+		 * if descriptor ring size is 0, we do not display the registers
+		 */
+		val = ioread32(base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_SIZE(ring_id));
+		if (!val)
+			continue;
+
+		len += snprintf(buf + len, max_buf_len - len, "Ring_id:%d\n", ring_id);
+		for (i = 0; i < ARRAY_SIZE(g_dma_reg_map); i++) {
+			val = ioread32(base_addr + (g_dma_reg_map[i].offset * (ring_id + 1)));
+			len += snprintf(buf + len, max_buf_len - len, "%s - 0x%x\n", g_dma_reg_map[i].name, val);
+		}
+	}
+
+	ret = simple_read_from_buffer(buffer, count, ppos, buf, len);
+	vfree(buf);
+
+	return ret;
+}
+
+/*
+ * nss_crypto_eip197_read_hia_reg()
+ *	Regdump for Command and Result Descriptor Ring
+ */
+ssize_t nss_crypto_eip197_read_hia_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos)
+{
+	struct nss_crypto_engine *eng = filep->private_data;
+	void *base_addr = eng->crypto_vaddr;
+	ssize_t max_buf_len, ret;
+	size_t len = 0;
+	uint32_t val;
+	char *buf;
+	int i;
+
+	/*
+	 * (Lines of output) * (Max string length)
+	 */
+	max_buf_len = ARRAY_SIZE(g_hia_reg_map) * NSS_CRYPTO_EIP197_REG_DUMP_SZ;
+
+	buf = vzalloc(max_buf_len);
+	if (!buf) {
+		nss_crypto_warn("Failed to allocate memory for statistic buffer");
+		return 0;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(g_hia_reg_map); i++) {
+		val = ioread32(base_addr + g_hia_reg_map[i].offset);
+		len += snprintf(buf + len, max_buf_len - len, "%s - 0x%x\n", g_hia_reg_map[i].name, val);
+	}
+
+	ret = simple_read_from_buffer(buffer, count, ppos, buf, len);
+	vfree(buf);
+
+	return ret;
+}
+
+/*
+ * nss_crypto_eip197_read_pe_reg()
+ *	Regdump for Command and Result Descriptor Ring
+ */
+ssize_t nss_crypto_eip197_read_pe_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos)
+{
+	struct nss_crypto_engine *eng = filep->private_data;
+	void *base_addr = eng->crypto_vaddr;
+	ssize_t max_buf_len, ret;
+	ssize_t len = 0;
+	uint32_t val;
+	char *buf;
+	int i;
+
+	/*
+	 * (Lines of output) * (Max string length)
+	 */
+	max_buf_len = ARRAY_SIZE(g_pe_reg_map) * NSS_CRYPTO_EIP197_REG_DUMP_SZ;
+
+	buf = vzalloc(max_buf_len);
+	if (!buf) {
+		nss_crypto_warn("Failed to allocate memory for statistic buffer");
+		return 0;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(g_pe_reg_map); i++) {
+		val = ioread32(base_addr + g_pe_reg_map[i].offset);
+		len += snprintf(buf + len, max_buf_len - len, "%s - 0x%x\n", g_pe_reg_map[i].name, val);
+	}
+
+	ret = simple_read_from_buffer(buffer, count, ppos, buf, len);
+	vfree(buf);
+
+	return ret;
+}
 
 /*
  * nss_crypto_eip197_global_reset_status()

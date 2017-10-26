@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -184,6 +184,37 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 			NSS_CRYPTO_EIP197_CTX_ALGO_SHA256 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
 			NSS_CRYPTO_EIP197_CTX_SIZE_24WORDS,
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_CBC,
+	},
+};
+
+/*
+ * g_crypto_eip197_debugfs
+ *	debugfs structure
+ */
+struct nss_crypto_debugfs_entry g_crypto_eip197_debugfs[] = {
+	{
+		.name = "dma_regs",
+		.ops = {
+			.owner = THIS_MODULE,
+			.open = simple_open,
+			.read = nss_crypto_eip197_read_dma_reg,
+		},
+	},
+	{
+		.name = "hia_regs",
+		.ops = {
+			.owner = THIS_MODULE,
+			.open = simple_open,
+			.read = nss_crypto_eip197_read_hia_reg,
+		},
+	},
+	{
+		.name = "pe_regs",
+		.ops = {
+			.owner = THIS_MODULE,
+			.open = simple_open,
+			.read = nss_crypto_eip197_read_pe_reg,
+		},
 	},
 };
 
@@ -429,6 +460,14 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 		iounmap(vaddr);
 		return -ENOMEM;
 	}
+
+	eng->node = node;
+
+	/*
+	 * Populate and add engine debugfs register dump structure
+	 */
+	eng->debugfs_entries = g_crypto_eip197_debugfs;
+	eng->debugfs_num_entries = ARRAY_SIZE(g_crypto_eip197_debugfs);
 
 	/*
 	 * Fill EIP197 engine specific parameters

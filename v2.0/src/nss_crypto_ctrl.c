@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -840,6 +840,8 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 	 */
 	list_add_tail(&eng->list, &node->eng_head);
 
+	nss_crypto_debugfs_add_engine(eng, node->dentry);
+
 	return 0;
 }
 
@@ -869,6 +871,8 @@ void nss_crypto_engine_free(struct nss_crypto_engine *eng)
 {
 
 	list_del(&eng->list);
+
+	nss_crypto_debugfs_del_engine(eng);
 
 	/*
 	 * unmap previously mapped addresses
