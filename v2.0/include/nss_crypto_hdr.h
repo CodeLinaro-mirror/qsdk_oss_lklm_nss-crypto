@@ -32,27 +32,6 @@
 #endif
 
 /**
- * nss_crypto_resp_error
- *	response errors from crypto HW
- */
-enum nss_crypto_resp_error {
-	NSS_CRYPTO_RESP_ERROR_NONE = 0,			/**< no error */
-	NSS_CRYPTO_RESP_ERROR_HDR_VERSION,		/**< header version mismatch */
-	NSS_CRYPTO_RESP_ERROR_CTX_RANGE,		/**< crypto index out-of-range */
-	NSS_CRYPTO_RESP_ERROR_CTX_NOUSE,		/**< crypto index is freed */
-	NSS_CRYPTO_RESP_ERROR_DATA_EMPTY,		/**< crypto data is empty */
-	NSS_CRYPTO_RESP_ERROR_DATA_LEN,			/**< crypto data length */
-	NSS_CRYPTO_RESP_ERROR_DATA_TIMEOUT,		/**< data timeout from HW */
-	NSS_CRYPTO_RESP_ERROR_CIPHER_ALGO,		/**< cipher algo is not supported */
-	NSS_CRYPTO_RESP_ERROR_CIPHER_MODE,		/**< cipher mode is not supported */
-	NSS_CRYPTO_RESP_ERROR_CIPHER_BLK_LEN,		/**< cipher block length is not aligned */
-	NSS_CRYPTO_RESP_ERROR_HASH_CHECK,		/**< hash check failed */
-	NSS_CRYPTO_RESP_ERROR_HASH_NOSPACE,		/**< no space to write hash */
-	NSS_CRYPTO_RESP_ERROR_HW_STATUS,		/**< more errors in HW status */
-	NSS_CRYPTO_RESP_ERROR_MAX
-};
-
-/**
  * nss_crypto_frag
  *	structure to describe a crypto fragment
  */
@@ -283,7 +262,7 @@ static inline void nss_crypto_hdr_set_op(struct nss_crypto_hdr *ch, enum nss_cry
  * @return
  * Error status of transform request.
  */
-static inline enum nss_crypto_resp_error nss_crypto_hdr_get_error(struct nss_crypto_hdr *ch)
+static inline enum nss_crypto_cmn_resp_error nss_crypto_hdr_get_error(struct nss_crypto_hdr *ch)
 {
 	return ch->error;
 }
