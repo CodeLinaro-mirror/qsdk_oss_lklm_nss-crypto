@@ -266,48 +266,6 @@ free:
 }
 
 /*
- * nss_crypto_eip197_ring_init()
- *	command and result descriptor ring initialization
- */
-static void nss_crypto_eip197_ring_init(void __iomem *base_addr, uint32_t in_paddr,
-					uint32_t out_paddr, size_t ring_sz, int id)
-{
-	size_t in_words = ring_sz / sizeof(uint32_t);
-	size_t out_words = ring_sz / sizeof(uint32_t);
-
-	/*
-	 * Configure Command Descriptor Ring
-	 * - Configure physical address(in_paddr) to ring base address registers
-	 * - Configure total size of the ring(in_words)
-	 * - Configure descriptor size and descriptor format
-	 * - Configure descriptor fetch size and threshold
-	 * - Enable descriptor internal read and write cache
-	 */
-	iowrite32(in_paddr, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_LO(id));
-	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_HI(id));
-	iowrite32(in_words << 2, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_SIZE(id));
-	iowrite32(NSS_CRYPTO_EIP197_CMD_SZ, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DESC_SIZE(id));
-	iowrite32(NSS_CRYPTO_EIP197_CMD_FETCH_SZ, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_CFG(id));
-	iowrite32(NSS_CRYPTO_EIP197_ENB_DMA, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DMA_CFG(id));
-
-	/*
-	 * Configure Result Descriptor Ring
-	 * - Configure physical address(in_paddr) to ring base address registers
-	 * - Configure total size of the ring(in_words)
-	 * - Configure descriptor size and descriptor format
-	 * - Configure descriptor fetch size and threshold
-	 * - Enable descriptor internal read and write cache
-	 */
-	iowrite32(out_paddr, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_LO(id));
-	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_HI(id));
-	iowrite32(out_words << 2, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_SIZE(id));
-	iowrite32(NSS_CRYPTO_EIP197_RES_SZ, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DESC_SIZE(id));
-	iowrite32(NSS_CRYPTO_EIP197_RES_FETCH_SZ, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_CFG(id));
-	iowrite32(NSS_CRYPTO_EIP197_RES_PROC_SZ, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_THRESH(id));
-	iowrite32(NSS_CRYPTO_EIP197_ENB_DMA, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DMA_CFG(id));
-}
-
-/*
  * nss_crypto_eip197_fill_digest()
  *	Precomputing the first pass of the digest.
  *
@@ -394,86 +352,6 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 
 	vfree(mem);
 	return 0;
-}
-
-/*
- * nss_crypto_eip197_dma_fill()
- *	Initialize the DMA
- *
- * Note: DMA rings(input and output) in EIP has three parts:
- * - 4 words of frag data
- * - 4 words of token data
- * - 4 words of bypass data
- *
- * In the api, we will pick the dma ring for crypto, reset all the above words
- * for all the descriptors associated with the ring.
- * We will send the physical address of this rings to NSS FW, so that NSS FW can
- * start reaping through the descritpors.
- * We will init basic configuration parameter like fetch threshold and
- * descriptor start address in the ring.
- * We will set prepared and processed register address for the ring in the message
- * structure.
- */
-void nss_crypto_eip197_dma_fill(struct nss_crypto_engine *eng, struct nss_crypto_dma *dma,
-			struct nss_crypto_cmn_dma *msg)
-{
-	uint32_t in_paddr, out_paddr;
-	void *base_addr = eng->crypto_vaddr;
-	uint16_t ring_id = dma->pair_id;
-	uint32_t count = eng->dma_count;
-	size_t ring_sz;
-
-	/*
-	 * Since we are using crypto in Lookaside mode, it is
-	 * expected that input descriptor is equal to the
-	 * output descriptor.Hence, ring_sz is applicable for
-	 * both input and output ring.
-	 */
-	ring_sz = eng->in_desc_sz * count;
-	BUG_ON(ring_sz % SMP_CACHE_BYTES);
-
-	/*
-	 * we need to make sure that the memory is aligned to cache line boundary
-	 */
-	dma->in = PTR_ALIGN(dma->mem + sizeof(struct nss_crypto_dma), SMP_CACHE_BYTES);
-	dma->out = PTR_ALIGN(dma->in + ring_sz, SMP_CACHE_BYTES);
-
-	dma->in_sz = dma->out_sz = ring_sz;
-
-	/*
-	 * dma_map input and output address
-	 */
-	in_paddr = (uint32_t)dma_map_single(eng->dev, dma->in, ring_sz, DMA_TO_DEVICE);
-	out_paddr = (uint32_t)dma_map_single(eng->dev, dma->out, ring_sz, DMA_TO_DEVICE);
-
-	BUG_ON(in_paddr % SMP_CACHE_BYTES);
-	BUG_ON(out_paddr % SMP_CACHE_BYTES);
-
-	/*
-	 * Configure ring for this particular ring id
-	 */
-	nss_crypto_eip197_ring_init(base_addr, in_paddr, out_paddr, ring_sz, ring_id);
-
-	/*
-	 * Prepare input dma message
-	 */
-	msg->in.ring_addr = in_paddr;
-	msg->in.write_reg = (uint32_t)eng->dma_paddr + NSS_CRYPTO_EIP197_HIA_CDR_COUNT(ring_id);
-	msg->in.read_reg = (uint32_t)eng->dma_paddr + NSS_CRYPTO_EIP197_HIA_CDR_PROC_PNTR(ring_id);
-
-	/*
-	 * Prepare output dma message
-	 */
-	msg->out.ring_addr = out_paddr;
-	msg->out.write_reg = (uint32_t)eng->dma_paddr + NSS_CRYPTO_EIP197_HIA_RDR_COUNT(ring_id);
-	msg->out.read_reg = (uint32_t)eng->dma_paddr + NSS_CRYPTO_EIP197_HIA_RDR_PROC_PNTR(ring_id);
-
-	/*
-	 * Number of descriptors in input and
-	 * output ring
-	 */
-	msg->count = count;
-	msg->pair_id = dma->pair_id;
 }
 
 /*
@@ -566,21 +444,12 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 	 * Fill EIP197 engine specific parameters
 	 */
 	eng->id = offset;
-	eng->fill_dma = nss_crypto_eip197_dma_fill;
 
 	/*
 	 * note: for EIP197 the crypto & dma base address are same
 	 */
-	eng->dma_paddr = paddr;
-	eng->dma_vaddr = vaddr;
 	eng->crypto_paddr = paddr;
 	eng->crypto_vaddr = vaddr;
-
-	/*
-	 * this required for indicating the DMA alloc the size of each ring
-	 */
-	eng->in_desc_sz = sizeof(struct nss_crypto_eip197_desc);
-	eng->out_desc_sz = sizeof(struct nss_crypto_eip197_desc);
 
 	/*
 	 * initialize the H/W

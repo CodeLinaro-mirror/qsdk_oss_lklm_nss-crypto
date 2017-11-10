@@ -27,12 +27,9 @@
 	(sizeof(struct nss_crypto_cmn_msg) - sizeof(struct nss_cmn_msg))
 
 struct nss_crypto_engine;
-struct nss_crypto_dma;
 struct nss_crypto_ctx;
 
 typedef int (*nss_crypto_ctx_fill_method_t)(struct nss_crypto_ctx *ctx, struct nss_crypto_session_data *data, struct nss_crypto_cmn_ctx *msg, void __iomem *vaddr);
-typedef void (*nss_crypto_dma_fill_method_t)(struct nss_crypto_engine *eng, struct nss_crypto_dma *dma,
-					struct nss_crypto_cmn_dma *msg);
 
 /*
  * nss_crypto_algo_info
@@ -134,42 +131,13 @@ struct nss_crypto_node {
  */
 struct nss_crypto_engine {
 	struct list_head list;			/* next engine */
-	struct list_head dma_head;		/* start of DMA ring list */
 	struct device *dev;			/* engine device */
 	uint32_t id;				/* engine id */
 
-	size_t in_desc_sz;			/* input descriptor size */
-	size_t out_desc_sz;			/* output descriptor size */
-
-	uint32_t dma_count;			/* no. of descriptors */
 	uint32_t dma_mask;			/* no. of DMA rings available */
-	nss_crypto_dma_fill_method_t fill_dma;	/* dma fill method */
-
-	phys_addr_t dma_paddr;			/* starting physical address of DMA regs */
-	void __iomem *dma_vaddr;		/* starting virtual address of DMA regs */
 
 	phys_addr_t crypto_paddr;		/* starting physical address of Crypto regs */
 	void __iomem *crypto_vaddr;		/* starting virtual address of Crypto regs */
-};
-
-/*
- * nss_crypto_dma
- *	DMA class
- *
- * Note: This represents the a DMA ring within a engine
- * class. There can multiple DMA channels that a single
- * engine can support. Typically the "in" & "out" are
- * specific to the HW engine and it must be interpretted
- * by the engine specific code.
- */
-struct nss_crypto_dma {
-	struct list_head list;	/* next ring */
-	uint16_t pair_id;	/* dma pair-ID*/
-	void *mem;		/* DMA ring memory (in + out + alignment) */
-	void *in;		/* pointer to input ring */
-	void *out;		/* pointer to output ring */
-	size_t in_sz;		/* input ring size */
-	size_t out_sz;		/* output ring size */
 };
 
 /*
@@ -184,9 +152,6 @@ extern int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node
 extern struct nss_crypto_engine *nss_crypto_engine_alloc(struct platform_device *pdev);
 extern void nss_crypto_engine_free(struct nss_crypto_engine *eng);
 extern int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engine *eng);
-
-extern struct nss_crypto_dma *nss_crypto_dma_alloc(uint16_t pair_id, size_t ring_size);
-extern void nss_crypto_dma_free(struct nss_crypto_engine *eng, struct nss_crypto_dma *dma);
 
 extern void nss_crypto_ctx_free(struct kref *ref);
 extern void nss_crypto_user_free(struct kref *ref);

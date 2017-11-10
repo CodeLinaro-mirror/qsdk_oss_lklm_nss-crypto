@@ -742,49 +742,6 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 EXPORT_SYMBOL(nss_crypto_session_free);
 
 /*
- * nss_crypto_dma_alloc()
- *	allocate dma ring
- */
-struct nss_crypto_dma *nss_crypto_dma_alloc(uint16_t pair_id, size_t size)
-{
-	struct nss_crypto_dma *dma;
-	size_t total_sz;
-
-	/*
-	 * We typically like to allocate a big chunk of memory
-	 * and cut the rings, control out of it
-	 * Total size, keeping alignment in consideration
-	 */
-	total_sz = size + sizeof(struct nss_crypto_dma) + SMP_CACHE_BYTES;
-	total_sz = ALIGN(total_sz, sizeof(uint32_t));
-
-	dma = kzalloc(total_sz, GFP_KERNEL);
-	if (!dma) {
-		nss_crypto_warn("%d: unable to allocate dma ring\n", pair_id);
-		return NULL;
-	}
-
-	dma->mem = (uint8_t *)dma + sizeof(struct nss_crypto_dma);
-	dma->pair_id = pair_id;
-
-	INIT_LIST_HEAD(&dma->list);
-	return dma;
-}
-
-/*
- * nss_crypto_dma_free()
- *	free the allocated DMA
- */
-void nss_crypto_dma_free(struct nss_crypto_engine *eng, struct nss_crypto_dma *dma)
-{
-	dma_unmap_single(eng->dev, virt_to_phys(dma->in), dma->in_sz, DMA_FROM_DEVICE);
-	dma_unmap_single(eng->dev, virt_to_phys(dma->out), dma->out_sz, DMA_FROM_DEVICE);
-
-	list_del(&dma->list);
-	kfree(dma);
-}
-
-/*
  * nss_crypto_engine_init()
  *	initialize the crypto engine
  */
@@ -793,10 +750,9 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	struct nss_crypto_cmn_msg nim = {0};
 	struct nss_crypto_cmn_engine *msg = &nim.msg.eng;
-	struct nss_crypto_dma *dma;
+	struct nss_crypto_cmn_dma *dma_msg = &nim.msg.dma;
 	nss_tx_status_t status;
 	unsigned long *mask;
-	size_t ring_sz;
 	uint16_t id;
 
 	/*
@@ -816,56 +772,29 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 		return (status == NSS_TX_FAILURE_QUEUE) ? -EBUSY : -ENODEV;
 	}
 
-	/*
-	 * We need calculate how many descriptors needs to be allocated for the DMA channel
-	 * Each DMA request descriptor must have an associated "token". The FW indicates
-	 * the maximum no. tokens that are available for the entire node.
-	 * This means if there more than 1 engine then the tokens will be divided on the
-	 * basis of per engine per channel
-	 */
-	eng->dma_count = min(msg->req_count, node->dma_qdepth);
 	eng->dma_mask = msg->dma_mask;
-	if (!eng->dma_count || !eng->dma_mask)
+	if (!eng->dma_mask)
 		return -ENOENT;
-
-	/*
-	 * we will allocate the entire DMA as single block of memory
-	 */
-	ring_sz = eng->dma_count * (eng->in_desc_sz + eng->out_desc_sz);
-	ring_sz += SMP_CACHE_BYTES;
 
 	/*
 	 * Walk and find the DMA rings to initialize
 	 */
 	mask = (unsigned long *)&eng->dma_mask;
 	for_each_set_bit(id, mask, BITS_PER_BYTE * sizeof(eng->dma_mask)) {
-		/*
-		 * reset the message for use with setup DMA
-		 */
-		dma = nss_crypto_dma_alloc(id, ring_sz);
-		if (!dma) {
-			nss_crypto_warn("%p: unable to allocate DMA(%d)\n", eng, id);
-			return -ENOMEM;
-		}
-
-		/*
-		 * this is sync message there is no need for callback
-		 */
-		nim.cm.type = NSS_CRYPTO_CMN_MSG_TYPE_SETUP_DMA;
-		nim.cm.response = 0;
-		nim.cm.error = 0;
+		memset(&nim, 0, sizeof(nim));
 
 		/*
 		 * Initialize Engine Specific DMA structures
 		 */
-		list_add_tail(&dma->list, &eng->dma_head);
-		eng->fill_dma(eng, dma, &nim.msg.dma);
+		nss_cmn_msg_init(&nim.cm, node->nss_ifnum, NSS_CRYPTO_CMN_MSG_TYPE_SETUP_DMA,
+			 sizeof(nim) - sizeof(nim.cm), NULL, eng);
+
+		dma_msg->pair_id = id;
 
 		status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &nim);
 		if (status != NSS_TX_SUCCESS) {
 			nss_crypto_warn("%p: unable to send(%d), status(%d), rsp(%d), error(%d)\n",
 					node, nim.cm.type, status, nim.cm.response, nim.cm.error);
-			nss_crypto_dma_free(eng, dma);
 			continue;
 		}
 	}
@@ -892,7 +821,6 @@ struct nss_crypto_engine *nss_crypto_engine_alloc(struct platform_device *pdev)
 		return NULL;
 
 	eng->dev = &pdev->dev;
-	INIT_LIST_HEAD(&eng->dma_head);
 	INIT_LIST_HEAD(&eng->list);
 
 	return eng;
@@ -904,11 +832,6 @@ struct nss_crypto_engine *nss_crypto_engine_alloc(struct platform_device *pdev)
  */
 void nss_crypto_engine_free(struct nss_crypto_engine *eng)
 {
-	struct nss_crypto_dma *dma;
-	struct nss_crypto_dma *tmp;
-
-	list_for_each_entry_safe(dma, tmp, &eng->dma_head, list)
-		nss_crypto_dma_free(eng, dma);
 
 	list_del(&eng->list);
 
@@ -916,9 +839,6 @@ void nss_crypto_engine_free(struct nss_crypto_engine *eng)
 	 * unmap previously mapped addresses
 	 */
 	iounmap(eng->crypto_vaddr);
-	if (eng->crypto_vaddr != eng->dma_vaddr)
-		iounmap(eng->dma_vaddr);
-
 	vfree(eng);
 }
 
@@ -990,15 +910,6 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	 */
 	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask)) {
 		nss_crypto_warn("%p: unable to read node DMA mask\n", np);
-		return -ENOENT;
-	}
-
-	/*
-	 * find the maximum DMA queue depth required
-	 */
-	of_property_read_u32(np, "qcom,dma-queue-depth", &node->dma_qdepth);
-	if (!node->dma_qdepth) {
-		nss_crypto_warn("%p: unable to read dma_qdepth\n", np);
 		return -ENOENT;
 	}
 

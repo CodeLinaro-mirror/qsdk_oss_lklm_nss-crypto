@@ -576,73 +576,11 @@ void nss_crypto_eip197_hw_setup(void __iomem *base_addr)
 }
 
 /*
- * nss_crypto_eip197_hw_setup_dma()
- *	prepare DMA for operation
- */
-void nss_crypto_eip197_hw_setup_dma(void __iomem *base_addr, uint32_t dma_mask)
-{
-	uint32_t max_dma_rings = hweight32(dma_mask);
-	uint32_t val;
-	int i;
-
-	/*
-	 * Allow passing 16 bytes of metadata information from
-	 * input to output.
-	 */
-	iowrite32(NSS_CRYPTO_EIP197_ENB_MDATA, base_addr + NSS_CRYPTO_EIP197_METADATA_EN_OFFSET);
-
-	/*
-	 * We will reset all the DMA rings supported by our architecture
-	 */
-	for (i = 0; i < max_dma_rings; i++) {
-		/*
-		 * reset command descriptor ring (CDR)
-		 */
-		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_COUNT(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_PREP_PNTR(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_LO(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_BASE_ADDR_HI(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_RING_SIZE(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DESC_SIZE(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_CFG(i));
-
-		/*
-		 * enable CDR buffering
-		 */
-		iowrite32(NSS_CRYPTO_EIP197_CLR_DMA, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_DMA_CFG(i));
-		iowrite32(NSS_CRYPTO_EIP197_RST_CMD, base_addr + NSS_CRYPTO_EIP197_HIA_CDR_STAT(i));
-
-		/*
-		 * reset result descriptor ring (RDR)
-		 */
-		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_COUNT(i));
-		iowrite32(NSS_CRYPTO_EIP197_CLR_CNT, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PROC_COUNT(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PREP_PNTR(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_PROC_PNTR(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_LO(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_BASE_ADDR_HI(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_RING_SIZE(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DESC_SIZE(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_CFG(i));
-
-		/*
-		 * enable RDR buffering
-		 */
-		val = NSS_CRYPTO_EIP197_CLR_DMA | NSS_CRYPTO_EIP197_CLR_DMA_CTRL;
-		iowrite32(val, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_DMA_CFG(i));
-		iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_THRESH(i));
-		iowrite32(NSS_CRYPTO_EIP197_RST_RES, base_addr + NSS_CRYPTO_EIP197_HIA_RDR_STAT(i));
-	}
-}
-
-/*
  * nss_crypto_eip197_hw_init()
  *	initialize the EIP197 HW
  */
 void nss_crypto_eip197_hw_init(struct platform_device *pdev, struct device_node *np, void __iomem *base_addr)
 {
-	struct nss_crypto_node *node = platform_get_drvdata(pdev);
-
 	nss_crypto_eip197_hw_setup(base_addr);
 
 	/*
@@ -661,5 +599,9 @@ void nss_crypto_eip197_hw_init(struct platform_device *pdev, struct device_node 
 	if (of_property_read_bool(np, "qcom,opue-enabled"))
 		nss_crypto_eip197_hw_boot_opue(&pdev->dev, base_addr, "opue.bin");
 
-	nss_crypto_eip197_hw_setup_dma(base_addr, node->dma_mask);
+	/*
+	 * Allow passing 16 bytes of metadata information from
+	 * input to output.
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_ENB_MDATA, base_addr + NSS_CRYPTO_EIP197_METADATA_EN_OFFSET);
 }
