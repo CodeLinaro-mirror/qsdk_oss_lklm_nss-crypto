@@ -85,16 +85,13 @@ static struct nss_crypto_eip197_ctx_ctrl g_ctx_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.ctrl[1] = NSS_CRYPTO_EIP197_CTX_CIPHER_MODE_ECB,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HASH] = {
-		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
-			NSS_CRYPTO_EIP197_CTX_SIZE_10WORDS,
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA1,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA224_HASH] = {
-		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA224 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
-			NSS_CRYPTO_EIP197_CTX_SIZE_14WORDS,
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA224,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA256_HASH] = {
-		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA256 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HASH |
-			NSS_CRYPTO_EIP197_CTX_SIZE_18WORDS,
+		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA256,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HMAC] = {
 		.ctrl[0] = NSS_CRYPTO_EIP197_CTX_ALGO_SHA1 | NSS_CRYPTO_EIP197_CTX_AUTH_MODE_HMAC |
@@ -308,8 +305,7 @@ static int nss_crypto_eip197_fill_digest(struct nss_crypto_ctx *ctx, const uint8
 	/*
 	 * Copy key for keyed hash algorithms
 	 */
-	if (key)
-		memcpy(hash_key, key, digest_sz);
+	memcpy(hash_key, key, digest_sz);
 
 	/*
 	 * Compute initial fixed hash values as suggested by RFC2104
@@ -379,12 +375,6 @@ int nss_crypto_eip197_ctx_fill(struct nss_crypto_ctx *ctx, struct nss_crypto_ses
 	cipher_key_words = ctx->info->cipher_key_len / sizeof(uint32_t);
 	auth_key_words = ctx->info->auth_key_len / sizeof(uint32_t);
 
-	/*
-	 * Handling non-keyed hash algorithms
-	 */
-	if (ctx->info->auth_valid && !auth_key_words)
-		auth_key_words = ctx->info->digest_sz / sizeof(uint32_t);
-
 	msg->words = cipher_key_words + (auth_key_words * 2) + NSS_CRYPTO_EIP197_MAX_CTRL;
 	msg->flags = NSS_CRYPTO_CMN_CTX_FLAGS_SPARE0 | NSS_CRYPTO_CMN_CTX_FLAGS_SPARE1;
 
@@ -399,9 +389,9 @@ int nss_crypto_eip197_ctx_fill(struct nss_crypto_ctx *ctx, struct nss_crypto_ses
 		memcpy(cipher_data, data->cipher_key, ctx->info->cipher_key_len);
 
 	/*
-	 * Fill auth digest
+	 * Fill auth digest for HMAC mode ops
 	 */
-	if (ctx->info->auth_valid)
+	if (ctx->info->auth_valid && ctx->info->auth_key_len)
 		return nss_crypto_eip197_fill_digest(ctx, data->auth_key, auth_data);
 
 	return 0;
