@@ -523,6 +523,9 @@ void nss_crypto_delayed_free(struct work_struct *work)
 	 */
 	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &ctx->nim);
 	switch (status) {
+	case NSS_TX_SUCCESS:
+		break;
+
 	case NSS_TX_FAILURE_QUEUE:
 		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_TX_RETRY_TICKS);
 		return;
