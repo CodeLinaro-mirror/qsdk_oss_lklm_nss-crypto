@@ -741,7 +741,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	nss_cmn_msg_init(&ctx->nim.cm, ctx->nss_ifnum, type, sizeof(ctx->nim) - sizeof(ctx->nim.cm), NULL, ctx);
 	ctx->nim.msg.ctx.index = idx;
 
-	schedule_delayed_work(&ctx->free_work, ctx->free_timeout);
+	schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_DELAYED_INIT_TICKS);
 }
 EXPORT_SYMBOL(nss_crypto_session_free);
 
