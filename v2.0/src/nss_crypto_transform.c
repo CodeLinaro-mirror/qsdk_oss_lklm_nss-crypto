@@ -39,7 +39,7 @@ struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32
 	size_t in_frag_len, out_frag_len;
 	size_t size;
 
-	in_frag_len = num_frags * sizeof(struct nss_crypto_frag);
+	in_frag_len = (num_frags + ahash) * sizeof(struct nss_crypto_frag);
 	out_frag_len = (num_frags + ahash) * sizeof(struct nss_crypto_frag);
 
 	/*
@@ -93,7 +93,7 @@ struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32
 	ch->hmac_len = hmac_len;
 	ch->buf_len = sizeof(struct nss_crypto_buf);
 
-	ch->in_frags = num_frags;
+	ch->in_frags = num_frags + ahash;
 	ch->out_frags = num_frags + ahash;
 
 	ch->in_frag_start = sizeof(struct nss_crypto_hdr);
@@ -378,16 +378,25 @@ void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterli
 	 * with FIRST and LAST flags.
 	 */
 	in[0].flags = NSS_CRYPTO_FRAG_FLAGS_FIRST;
+	in[nsegs].flags = NSS_CRYPTO_FRAG_FLAGS_LAST;
 	out[0].flags = NSS_CRYPTO_FRAG_FLAGS_FIRST;
-	in[nsegs - 1].flags |= NSS_CRYPTO_FRAG_FLAGS_LAST;
+	out[nsegs].flags = NSS_CRYPTO_FRAG_FLAGS_LAST;
 
 	/*
-	 * Set the last output descriptor to crypto header's hmac area.
+	 * Fill in and out addr
 	 */
 	hmac = nss_crypto_hdr_get_hmac(ch);
+	in[nsegs].addr = (uint32_t)virt_to_phys(hmac);
 	out[nsegs].addr = (uint32_t)virt_to_phys(hmac);
+
+	/*
+	 * HW is not expected to do anything with the last
+	 * input fragment added. This is added just to match
+	 * input fragment with output fragment.Hence, we
+	 * program the input segment lenght as zero.
+	 */
+	in[nsegs].len = 0;
 	out[nsegs].len = nss_crypto_hdr_get_hmac_len(ch);
-	out[nsegs].flags = NSS_CRYPTO_FRAG_FLAGS_LAST;
 }
 EXPORT_SYMBOL(nss_crypto_hdr_map_sglist_ahash);
 
