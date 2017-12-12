@@ -454,14 +454,7 @@ EXPORT_SYMBOL(nss_crypto_get_iv_len);
  */
 void nss_crypto_ctx_free(struct kref *ref)
 {
-	struct nss_crypto_ctx *ctx = container_of(ref, struct nss_crypto_ctx, ref);
 	struct nss_crypto_ctrl *ctrl = &g_control;
-
-	if (ctx->dentry)
-		debugfs_remove_recursive(ctx->dentry);
-
-	memset(ctx, 0, sizeof(*ctx));
-
 	atomic_inc(&ctrl->cstats.free);
 }
 EXPORT_SYMBOL(nss_crypto_ctx_free);
@@ -568,6 +561,9 @@ void nss_crypto_delayed_free(struct work_struct *work)
 		return;
 	}
 
+	if (ctx->dentry)
+		debugfs_remove_recursive(ctx->dentry);
+
 	kref_put(&ctx->ref, nss_crypto_ctx_free);
 }
 
@@ -614,6 +610,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 		 * for the current session
 		 */
 		if (!kref_get_unless_zero(&ctx->ref)) {
+			memset(ctx, 0, sizeof(*ctx));
 			ctx->idx = idx;
 			kref_init(&ctx->ref);
 			break;
