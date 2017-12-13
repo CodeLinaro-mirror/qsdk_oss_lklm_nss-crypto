@@ -16,6 +16,7 @@
  *
  */
 
+extern void nss_crypto_debugfs_add_control(struct nss_crypto_ctrl *ctrl);
 extern void nss_crypto_debugfs_add_node(struct nss_crypto_node *node, struct dentry *root, const char *name);
 extern void nss_crypto_debugfs_add_ctx(struct nss_crypto_ctx *ctx, struct dentry *root);
 extern void nss_crypto_debugfs_del_ctx(struct nss_crypto_ctx *ctx);

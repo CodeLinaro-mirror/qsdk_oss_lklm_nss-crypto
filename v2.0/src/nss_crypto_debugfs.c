@@ -64,6 +64,47 @@ static void nss_crypto_debugfs_add_ctx_stats(struct dentry *parent, struct nss_c
 }
 
 /*
+ * nss_crypto_debugfs_add_ctrl_stats()
+ * 	Creates debugfs entries for Host maintained control statistics
+ */
+static void nss_crypto_debugfs_add_ctrl_stats(struct dentry *parent, struct nss_crypto_ctrl_stats *stats)
+{
+	debugfs_create_atomic_t("ctx_alloc", S_IRUGO, parent, &stats->alloc);
+	debugfs_create_atomic_t("ctx_alloc_fail_node", S_IRUGO, parent, &stats->alloc_fail_node);
+	debugfs_create_atomic_t("ctx_alloc_fail_nomem", S_IRUGO, parent, &stats->alloc_fail_nomem);
+	debugfs_create_atomic_t("ctx_alloc_fail_nospace", S_IRUGO, parent, &stats->alloc_fail_nospace);
+	debugfs_create_atomic_t("ctx_alloc_fail_noalgo", S_IRUGO, parent, &stats->alloc_fail_noalgo);
+	debugfs_create_atomic_t("ctx_alloc_fail_noresp", S_IRUGO, parent, &stats->alloc_fail_noresp);
+
+	debugfs_create_atomic_t("ctx_free", S_IRUGO, parent, &stats->free);
+	debugfs_create_atomic_t("ctx_free_fail_queue", S_IRUGO, parent, &stats->free_fail_queue);
+	debugfs_create_atomic_t("ctx_free_fail_msg", S_IRUGO, parent, &stats->free_fail_msg);
+	debugfs_create_atomic_t("ctx_free_fail_inuse", S_IRUGO, parent, &stats->free_fail_inuse);
+	debugfs_create_atomic_t("ctx_free_fail_retry", S_IRUGO, parent, &stats->free_fail_retry);
+}
+
+/*
+ * nss_crypto_debugfs_add_control()
+ *	control specific stats entry
+ */
+void nss_crypto_debugfs_add_control(struct nss_crypto_ctrl *ctrl)
+{
+	/*
+	 * Create a debugfs entry corresponding to host stats
+	 */
+	ctrl->ctrl_dentry = debugfs_create_dir("control", ctrl->dentry);
+	if (ctrl->ctrl_dentry == NULL) {
+		nss_crypto_err("Unable to create qca-nss-crypto/control directory in debugfs");
+		return;
+	}
+
+	/*
+	 * create host stats files
+	 */
+	nss_crypto_debugfs_add_ctrl_stats(ctrl->ctrl_dentry, &ctrl->cstats);
+}
+
+/*
  * nss_crypto_debugfs_add_node()
  *	node specific stats entry
  */

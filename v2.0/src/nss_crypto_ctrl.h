@@ -71,6 +71,24 @@ struct nss_crypto_ctx {
 };
 
 /*
+ * nss_crypto_ctrl_stats
+ *	Host maintained control stats
+ */
+struct nss_crypto_ctrl_stats {
+	atomic_t alloc;			/**< Sessions allocated */
+	atomic_t alloc_fail_node;	/**< Session fill failed */
+	atomic_t alloc_fail_nomem;	/**< No memory */
+	atomic_t alloc_fail_nospace;	/**< Bitmap full */
+	atomic_t alloc_fail_noalgo;	/**< Invalid algorithm */
+	atomic_t alloc_fail_noresp;	/**< Alloc tx msg failure */
+	atomic_t free;			/**< Sessions freed */
+	atomic_t free_fail_msg;		/**< Tx msg failure */
+	atomic_t free_fail_inuse;	/**< Session in use */
+	atomic_t free_fail_queue;	/**< queue congested */
+	atomic_t free_fail_retry;	/**< Session free retry failure */
+};
+
+/*
  * nss_crypto_ctrl
  *	crypto driver control
  */
@@ -88,6 +106,9 @@ struct nss_crypto_ctrl {
 	struct completion complete;		/* Wait queue for processing pending items */
 	struct nss_ctx_instance *nss_msg_hdl;	/* NSS driver message handle */
 	struct dentry *dentry;			/* debugfs driver stats entry */
+
+	struct dentry *ctrl_dentry;			/* debugfs driver stats entry */
+	struct nss_crypto_ctrl_stats cstats; /* control stats */
 
 	bool active;				/* crypto is active */
 };
