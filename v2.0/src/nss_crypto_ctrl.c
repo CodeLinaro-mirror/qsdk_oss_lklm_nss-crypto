@@ -42,6 +42,7 @@
 #include <crypto/des.h>
 #include <crypto/aes.h>
 #include <crypto/md5.h>
+#include <crypto/ctr.h>
 #include <crypto/ghash.h>
 #include <engines/nss_crypto_engine.h>
 #include <nss_crypto_hlos.h>
@@ -56,35 +57,6 @@ struct nss_crypto_ctrl g_control = { {0} };
 
 #define NSS_CRYPTO_TX_RETRY_TICKS msecs_to_jiffies(100/* msecs */)
 #define NSS_CRYPTO_DELAYED_INIT_TICKS msecs_to_jiffies(100/* msecs */)
-
-/*
- * Standard initialization vector for SHA-1, source: FIPS 180-2
- */
-static uint32_t fips_std_sha1_iv[SHA1_DIGEST_SIZE / sizeof(uint32_t)] = {
-	SHA1_H0, SHA1_H1,
-	SHA1_H2, SHA1_H3,
-	SHA1_H4
-};
-
-/*
- * Standard initialization vector for SHA-224, source: FIPS 180-2
- */
-static uint32_t fips_std_sha224_iv[SHA256_DIGEST_SIZE / sizeof(uint32_t)] = {
-	SHA224_H0, SHA224_H1,
-	SHA224_H2, SHA224_H3,
-	SHA224_H4, SHA224_H5,
-	SHA224_H6, SHA224_H7
-};
-
-/*
- * Standard initialization vector for SHA-256, source: FIPS 180-2
- */
-static uint32_t fips_std_sha256_iv[SHA256_DIGEST_SIZE / sizeof(uint32_t)] = {
-	SHA256_H0, SHA256_H1,
-	SHA256_H2, SHA256_H3,
-	SHA256_H4, SHA256_H5,
-	SHA256_H6, SHA256_H7
-};
 
 /*
  * g_algo_info
@@ -119,6 +91,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_ECB] = {
 		.name = "qcom,aes128-ecb",
@@ -142,6 +115,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_ECB] = {
 		.name = "qcom,aes192-ecb",
@@ -165,6 +139,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_ECB] = {
 		.name = "qcom,aes256-ecb",
@@ -177,7 +152,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,sha160-hash",
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -185,7 +159,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,sha224-hash",
 		.digest_sz = SHA224_DIGEST_SIZE,
 		.auth_blk_len = SHA224_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha224_iv,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -193,7 +166,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,sha256-hash",
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -202,7 +174,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_key_len = SHA1_DIGEST_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -211,7 +182,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_key_len = SHA256_DIGEST_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -223,7 +193,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -235,7 +204,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -247,9 +215,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes128-ctr-sha256-hmac",
@@ -259,9 +227,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes192-cbc-sha160-hmac",
@@ -271,7 +239,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -283,7 +250,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -295,9 +261,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes192-ctr-sha256-hmac",
@@ -307,9 +273,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes256-cbc-sha160-hmac",
@@ -319,7 +285,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -331,7 +296,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -343,9 +307,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes256-ctr-sha256-hmac",
@@ -355,9 +319,9 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC] = {
 		.name = "qcom,3des-cbc-sha160-hmac",
@@ -367,7 +331,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = DES3_EDE_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha1_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -379,7 +342,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = DES3_EDE_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
-		.auth_fips_iv = fips_std_sha256_iv,
 		.cipher_valid = true,
 		.auth_valid = true,
 	},
@@ -581,10 +543,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	struct nss_crypto_node *node;
 	struct nss_crypto_ctx *ctx;
 	nss_tx_status_t status;
-	void __iomem *hw_ctx;
-	void __iomem *vaddr;
 	bool found = false;
-	size_t ctx_sz;
 	uint16_t idx;
 	int error;
 
@@ -652,21 +611,6 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	}
 
 	/*
-	 * We will allocate memory of ctx_words size and pass it to
-	 * engine specific context fill api to fill cipher keys and
-	 * auth keys. Once the message is communicated to NSS FW,
-	 * we will unmap and free the memory allocated.
-	 */
-	ctx_sz = ctrl->max_ctx_size * sizeof(uint32_t);
-	vaddr = kzalloc(ctx_sz + SMP_CACHE_BYTES, GFP_KERNEL);
-	if (!vaddr) {
-		nss_crypto_warn("%p: unable to allocate HW context(%zu)\n", user, ctx_sz);
-		atomic_inc(&ctrl->cstats.alloc_fail_nomem);
-		kref_put(&ctx->ref, nss_crypto_ctx_free);
-		return -ENOMEM;
-	}
-
-	/*
 	 * Fill common information for context
 	 */
 	ctx->info = &g_algo_info[data->algo];
@@ -675,19 +619,41 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	ctx->nss_ifnum = node->nss_ifnum;
 
 	/*
-	 * We need to make sure that NSS gets the address
-	 * aligned to cache line boundary
+	 * Fill cipher keys
 	 */
-	hw_ctx = PTR_ALIGN(vaddr, SMP_CACHE_BYTES);
+	if (data->cipher_key) {
+		BUG_ON(!ctx->info->cipher_valid);
+		BUG_ON(ctx->info->cipher_key_len > NSS_CRYPTO_CIPHER_KEYLEN_MAX);
+
+		memcpy((uint8_t *)&msg->cipher_key[0], data->cipher_key, ctx->info->cipher_key_len);
+	}
+
+	/*
+	 * Fill auth digest for HMAC mode ops
+	 */
+	if (data->auth_key) {
+		BUG_ON(!ctx->info->auth_valid);
+		BUG_ON(ctx->info->digest_sz > NSS_CRYPTO_AUTH_KEYLEN_MAX);
+
+		memcpy((uint8_t *)&msg->auth_key[0], data->auth_key, ctx->info->digest_sz);
+	}
+
+	/*
+	 * Copy nonce from message data, we will do a copy here irrespective of any check,
+	 * NSS FW will use it as per algorithm
+	 */
+	if (data->nonce) {
+		BUG_ON(ctx->info->nonce_sz > NSS_CRYPTO_NONCE_SIZE_MAX);
+		memcpy((uint8_t *)&msg->nonce[0], data->nonce, ctx->info->nonce_sz);
+	}
 
 	/*
 	 * Fill Hardware specific information
 	 */
-	error = node->fill_ctx(ctx, data, msg, hw_ctx);
+	error = node->fill_ctx(ctx, data, msg);
 	if (error < 0) {
 		atomic_inc(&ctrl->cstats.alloc_fail_node);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
-		kfree(vaddr);
 		return error;
 	}
 
@@ -695,7 +661,6 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 * Fill other fields of context message
 	 */
 	msg->index = idx;
-	msg->addr = (uint32_t)dma_map_single(node->dev, hw_ctx, ctx_sz, DMA_TO_DEVICE);
 	msg->algo = data->algo;
 
 	if (data->sec_key) {
@@ -719,13 +684,8 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 				ctx, nim.cm.type, status, nim.cm.response, nim.cm.error);
 		atomic_inc(&ctrl->cstats.alloc_fail_noresp);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
-		dma_unmap_single(node->dev, msg->addr, ctx_sz, DMA_FROM_DEVICE);
-		kfree(vaddr);
 		return -EBUSY;
 	}
-
-	dma_unmap_single(node->dev, msg->addr, ctx_sz, DMA_FROM_DEVICE);
-	kfree(vaddr);
 
 	/*
 	 * Initialize the delayed free

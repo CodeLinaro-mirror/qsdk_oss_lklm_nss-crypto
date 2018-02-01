@@ -29,7 +29,8 @@
 struct nss_crypto_engine;
 struct nss_crypto_ctx;
 
-typedef int (*nss_crypto_ctx_fill_method_t)(struct nss_crypto_ctx *ctx, struct nss_crypto_session_data *data, struct nss_crypto_cmn_ctx *msg, void __iomem *vaddr);
+typedef int (*nss_crypto_ctx_fill_method_t)(struct nss_crypto_ctx *ctx, struct nss_crypto_session_data *data,
+						struct nss_crypto_cmn_ctx *msg);
 
 /*
  * nss_crypto_algo_info
@@ -43,7 +44,7 @@ struct nss_crypto_algo_info {
 	uint16_t iv_len;			/* iv len */
 	uint16_t digest_sz;			/* digest size */
 	uint16_t auth_blk_len;			/* authentication block size */
-	uint32_t *auth_fips_iv;			/* authentication fips iv */
+	uint16_t nonce_sz;			/* nonce size */
 	bool cipher_valid;			/* algorithm supports cipher mode */
 	bool auth_valid;			/* algorithm supports auth mode */
 };

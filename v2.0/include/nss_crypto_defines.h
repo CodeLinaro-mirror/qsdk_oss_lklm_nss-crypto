@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all copies.
@@ -102,6 +102,7 @@ struct nss_crypto_user {
 struct nss_crypto_session_data {
 	const uint8_t *cipher_key;		/**< Cipher key */
 	const uint8_t *auth_key;		/**< Authentication key */
+	const uint8_t *nonce;			/**< Nonce */
 
 	uint16_t sec_key_offset;		/**< Secure offset */
 	enum nss_crypto_cmn_algo algo;		/**< Algorithm */

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
  * above copyright notice and this permission notice appear in all copies.
@@ -84,7 +84,11 @@ struct nss_crypto_frag {
 struct nss_crypto_hdr {
 	uint8_t version;			/**< Version number */
 	uint8_t skip;				/**< skip bytes from start */
+	uint8_t auth;				/**< authenticate only len */
+	uint8_t res1;				/**< reserved */
+
 	uint16_t index;				/**< crypto index */
+	uint8_t res2[2];				/**< reserved */
 
 	uint8_t op;				/**< operation direction */
 	uint8_t error;				/**< error */
@@ -229,6 +233,25 @@ void nss_crypto_hdr_map_skb(struct nss_crypto_hdr *ch, struct sk_buff *skb);
 static inline void nss_crypto_hdr_set_skip(struct nss_crypto_hdr *ch, uint8_t skip)
 {
 	ch->skip = skip;
+	ch->auth = skip;
+}
+
+/**
+ * nss_crypto_hdr_set_auth
+ *	set auth only len
+ *
+ * @datatype
+ * nss_crypto_hdr
+ *
+ * @param[in] ch crypto header
+ * @param[in] auth auth len
+ *
+ * @return
+ * None.
+ */
+static inline void nss_crypto_hdr_set_auth(struct nss_crypto_hdr *ch, uint8_t auth)
+{
+	ch->auth = auth;
 }
 
 /**
