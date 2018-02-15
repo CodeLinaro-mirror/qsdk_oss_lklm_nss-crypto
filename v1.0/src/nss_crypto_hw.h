@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -235,17 +235,6 @@ struct nss_crypto_cmd_request {
 	struct nss_crypto_bam_cmd go_proc;				/**< crypto trigger, marking config loaded */
 	struct nss_crypto_bam_cmd unlock;				/**< dummy write for unlock*/
 };
-
-/**
- * @brief crypto command block structure, there is '1' instance of common configuration as it
- * 	  doesn't change per request and there is 'n' request command blocks that change on
- * 	  each request
- */
-struct nss_crypto_cmd_block {
-	struct nss_crypto_cmd_config cfg;
-	struct nss_crypto_cmd_request req[NSS_CRYPTO_MAX_QDEPTH];
-};
-
 
 /**
  * @brief results dump format, generated at the end of the operation

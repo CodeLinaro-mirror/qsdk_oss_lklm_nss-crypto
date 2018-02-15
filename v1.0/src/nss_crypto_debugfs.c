@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -87,6 +87,19 @@ void nss_crypto_debugfs_init(struct nss_crypto_ctrl *ctrl)
 		 * We can still go ahead with other initialization
 		 */
 		nss_crypto_info_always("Unable to create directory qca-nss-crypto/config in debugfs\n");
+		debugfs_remove_recursive(ctrl->root_dentry);
+		return;
+	}
+
+	/*
+	 * create 'secure mode' debugfs entry during engine-0 probe
+	 */
+#if (LINUX_VERSION_CODE <= KERNEL_VERSION(4,3,6))
+	if (!debugfs_create_bool("secure_mode", S_IRUGO, ctrl->root_dentry, (uint32_t *)&ctrl->secure_mode)) {
+#else
+	if (!debugfs_create_bool("secure_mode", S_IRUGO, ctrl->root_dentry, &ctrl->secure_mode)) {
+#endif
+		nss_crypto_info_always("Unable to create qca-nss-crypto/secure_mode in debugfs\n");
 		debugfs_remove_recursive(ctrl->root_dentry);
 		return;
 	}

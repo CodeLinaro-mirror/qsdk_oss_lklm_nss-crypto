@@ -637,6 +637,7 @@ int nss_crypto_engine_init(uint32_t eng_num)
 	open = &nim->msg.eng;
 	open->eng_id = eng_num;
 	open->bam_pbase = e_ctrl->bam_pbase;
+	open->is_secure = ctrl->secure_mode;
 
 	for (i = 0; i < NSS_CRYPTO_BAM_PP; i++) {
 		nss_crypto_pipe_init(e_ctrl, i, &open->desc_paddr[i], &e_ctrl->hw_desc[i]);
@@ -654,85 +655,6 @@ int nss_crypto_engine_init(uint32_t eng_num)
 	if (nss_crypto_send_msg_sync(nim, NSS_CRYPTO_MSG_TYPE_OPEN_ENG) != NSS_CRYPTO_STATUS_OK)
 		status = -EBUSY;
 
-free:
-	kfree(nim);
-	return status;
-}
-
-/*
- * nss_crypto_send_session_update()
- * 	reset session specific state (alloc or free)
- */
-nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum nss_crypto_session_state state, enum nss_crypto_cipher algo)
-{
-	struct nss_crypto_ctrl *ctrl = &gbl_crypto_ctrl;
-	struct nss_crypto_config_session *session;
-	struct nss_crypto_msg *nim;
-	nss_crypto_status_t status;
-	uint32_t iv_len = 0;
-
-	nim = kzalloc(sizeof(struct nss_crypto_msg), GFP_KERNEL);
-	if (!nim) {
-		nss_crypto_err("unable to allocate memory\n");
-		return NSS_CRYPTO_STATUS_FAIL;
-	}
-
-	session = &nim->msg.session;
-
-	switch (state) {
-	case NSS_CRYPTO_SESSION_STATE_ACTIVE:
-		nss_crypto_debugfs_add_session(ctrl, session_idx);
-		break;
-
-	case NSS_CRYPTO_SESSION_STATE_FREE:
-		nss_crypto_debugfs_del_session(ctrl, session_idx);
-		break;
-
-	default:
-		nss_crypto_err("incorrect session state = %d\n", state);
-		status = NSS_CRYPTO_STATUS_FAIL;
-		goto free;
-	}
-
-	switch (algo) {
-	case NSS_CRYPTO_CIPHER_AES_CBC:
-	case NSS_CRYPTO_CIPHER_AES_CTR:
-		iv_len = NSS_CRYPTO_MAX_IVLEN_AES;
-		break;
-
-	case NSS_CRYPTO_CIPHER_DES:
-		iv_len = NSS_CRYPTO_MAX_IVLEN_DES;
-		break;
-
-	case NSS_CRYPTO_CIPHER_NULL:
-		iv_len = NSS_CRYPTO_MAX_IVLEN_NULL;
-		break;
-
-	default:
-		nss_crypto_err("invalid cipher\n");
-		status = NSS_CRYPTO_STATUS_FAIL;
-		goto free;
-	}
-
-	session->idx = session_idx;
-	session->state = state;
-	session->iv_len = iv_len;
-
-	/*
-	 * send reset stats config message to NSS crypto
-	 */
-	status = nss_crypto_send_msg_sync(nim, NSS_CRYPTO_MSG_TYPE_UPDATE_SESSION);
-	if (status != NSS_CRYPTO_STATUS_OK) {
-		nss_crypto_info_always("session(%d) update failed\n", session->idx);
-		goto free;
-	}
-
-	/*
-	 * If NSS state has changed to free. Delete session resources
-	 */
-	if (session->state == NSS_CRYPTO_SESSION_STATE_FREE) {
-		nss_crypto_idx_free(session->idx);
-	}
 free:
 	kfree(nim);
 	return status;

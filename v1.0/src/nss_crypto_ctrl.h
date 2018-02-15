@@ -103,6 +103,7 @@ struct nss_crypto_idx_info {
 	struct dentry *cfg_dentry;			/**< debufs entry corresponding to config */
 
 	uint16_t req_type;				/**< transform is for encryption or decryption */
+
 	enum nss_crypto_max_blocklen cipher_blk_len;	/**< cipher block len */
 	enum nss_crypto_max_ivlen iv_len;		/**< iv len */
 };
@@ -167,6 +168,8 @@ struct nss_crypto_ctrl {
 	struct nss_crypto_clock *clocks;	/**< array of crypto clocks */
 	size_t max_clocks;			/**< maximum no. of available clocks */
 
+	bool secure_mode;			/**< whether engine is in secure/non-secure mode */
+
 	struct nss_crypto_idx_info idx_info[NSS_CRYPTO_MAX_IDXS];
 						/**< per index info */
 };
@@ -230,15 +233,14 @@ nss_crypto_status_t nss_crypto_idx_init(struct nss_crypto_ctrl_eng *eng, struct 
 void nss_crypto_ctrl_init(void);
 
 /**
- * @brief update IV parameters
+ * @brief send synchronous message to NSS
  *
- * @param session_idx[IN] session index
- * @param state[IN] crypto state (active/free)
- * @param cipher[IN] cipher algorithm
+ * @param nim[IN] crypto message instance
+ * @param type[IN] message type
  *
- * @return status of the call
+ * @return status of call
  */
-nss_crypto_status_t nss_crypto_send_session_update(uint32_t session_idx, enum nss_crypto_session_state state, enum nss_crypto_cipher cipher);
+nss_crypto_status_t nss_crypto_send_msg_sync(struct nss_crypto_msg *nim, enum nss_crypto_msg_type type);
 
 /**
  * @brief reallocate memory.

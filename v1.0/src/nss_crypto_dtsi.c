@@ -295,6 +295,12 @@ static int nss_crypto_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	/*
+	 * Secure Mode configuration should be same across all engines
+	 */
+	if (!gbl_crypto_ctrl.secure_mode)
+		gbl_crypto_ctrl.secure_mode = of_property_read_bool(np, "qcom,secure-mode-enabled");
+
 	eng_ptr = gbl_crypto_ctrl.eng;
 	old_sz = (gbl_crypto_ctrl.num_eng * sizeof(struct nss_crypto_ctrl_eng));
 	new_sz = old_sz + sizeof(struct nss_crypto_ctrl_eng);
