@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -152,6 +152,7 @@ struct nss_crypto_node {
  */
 struct nss_crypto_engine {
 	struct list_head list;			/* next engine */
+	struct nss_crypto_node *node;		/* pointer to node */
 	struct device *dev;			/* engine device */
 	uint32_t id;				/* engine id */
 
@@ -159,6 +160,9 @@ struct nss_crypto_engine {
 
 	phys_addr_t crypto_paddr;		/* starting physical address of Crypto regs */
 	void __iomem *crypto_vaddr;		/* starting virtual address of Crypto regs */
+	struct dentry *dentry;                  /* entry for engine stats */
+	struct nss_crypto_debugfs_entry *debugfs_entries;	/* debugfs entries */
+	size_t debugfs_num_entries;		/* debugfs entries count */
 };
 
 /*

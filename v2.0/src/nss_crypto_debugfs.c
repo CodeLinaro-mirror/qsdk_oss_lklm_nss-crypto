@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2015, 2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015, 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -125,6 +125,49 @@ void nss_crypto_debugfs_add_node(struct nss_crypto_node *node, struct dentry *ro
 	 * create node stats files
 	 */
 	nss_crypto_debugfs_add_node_stats(node->dentry, &node->stats);
+}
+
+/*
+ * nss_crypto_debugfs_add_engine()
+ *	Creates per engine debugfs entries
+ */
+void nss_crypto_debugfs_add_engine(struct nss_crypto_engine *eng, struct dentry *root)
+{
+	char buf[NSS_CRYPTO_DEBUGFS_NAME_SZ] = {0};
+	struct nss_crypto_debugfs_entry *entry;
+	size_t num_entries;
+	int i = 0;
+
+	if (!root) {
+		nss_crypto_warn("%p: no root debugfs entry found\n", eng);
+		return;
+	}
+
+	scnprintf(buf, sizeof(buf), "engine-0x%x", eng->id);
+
+	eng->dentry = debugfs_create_dir(buf, root);
+	if (!eng->dentry) {
+		nss_crypto_warn("%p: failed to create engine debugfs dentry\n", eng);
+		return;
+	}
+
+	entry = eng->debugfs_entries;
+	num_entries = eng->debugfs_num_entries;
+	for ( ; i < num_entries; i++, entry++) {
+		debugfs_create_file(entry->name, S_IRUGO, eng->dentry, eng, &entry->ops);
+	}
+
+	return;
+}
+
+/*
+ * nss_crypto_debugfs_del_engine()
+ *	Delete per engine debugfs entries
+ */
+void nss_crypto_debugfs_del_engine(struct nss_crypto_engine *eng)
+{
+	if (eng->dentry)
+		debugfs_remove_recursive(eng->dentry);
 }
 
 /*
