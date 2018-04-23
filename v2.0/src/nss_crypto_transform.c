@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -162,6 +162,11 @@ int nss_crypto_transform_payload(struct nss_crypto_user *user, struct nss_crypto
 	ctx = &ctrl->ctx_tbl[ch->index];
 	if (!kref_get_unless_zero(&ctx->ref))
 		return -ENOENT;
+
+	if (!atomic_read(&ctx->active)) {
+		kref_put(&ctx->ref, nss_crypto_ctx_free);
+		return -EBUSY;
+	}
 
 	buf = nss_crypto_hdr_get_buf(ch);
 	if (!buf->mapped) {

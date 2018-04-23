@@ -607,6 +607,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 		if (!kref_get_unless_zero(&ctx->ref)) {
 			memset(ctx, 0, sizeof(*ctx));
 			ctx->idx = idx;
+			atomic_set(&ctx->active, 0);
 			kref_init(&ctx->ref);
 			break;
 		}
@@ -737,6 +738,8 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	atomic_inc(&ctrl->cstats.alloc);
 
 	*session = idx;
+	atomic_set(&ctx->active, 1);
+
 	return 0;
 }
 EXPORT_SYMBOL(nss_crypto_session_alloc);

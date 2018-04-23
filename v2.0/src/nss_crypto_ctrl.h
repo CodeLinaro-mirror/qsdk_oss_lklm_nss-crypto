@@ -69,6 +69,7 @@ struct nss_crypto_ctx {
 
 	uint16_t idx;				/* session index */
 	enum nss_crypto_cmn_algo algo;		/* session algorithm */
+	atomic_t active;			/* ctx active/inactive */
 };
 
 /*
