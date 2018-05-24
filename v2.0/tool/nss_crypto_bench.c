@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -978,7 +978,7 @@ int __init crypto_bench_init(void)
 
 	ctx->attach = crypto_bench_attach;
 	ctx->detach = crypto_bench_detach;
-	strcpy(ctx->name, "bench");
+	strlcpy(ctx->name, "bench", sizeof(ctx->name));
 	ctx->hdr_pool_sz = 1024;
 	ctx->default_hdr_sz = 512;
 	ctx->timeout_ticks = 1;
