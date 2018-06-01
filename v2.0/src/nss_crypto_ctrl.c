@@ -1016,6 +1016,7 @@ void nss_crypto_user_free(struct kref *ref)
 	struct nss_crypto_user *user = container_of(ref, struct nss_crypto_user, ref);
 	struct sk_buff_head *sk_head = &user->sk_head;
 	struct nss_crypto_ctrl *ctrl = &g_control;
+	struct sk_buff *skb;
 
 	/*
 	 * wake up the user unregister if its waiting for pending SKB(s)
@@ -1028,8 +1029,13 @@ void nss_crypto_user_free(struct kref *ref)
 	 * user has dropped to zero protects this list from being
 	 * accessed by any other legitimate caller
 	 */
-	while (!skb_queue_empty(sk_head))
-		dev_kfree_skb_any(__skb_dequeue(sk_head));
+	do {
+		skb = __skb_dequeue(sk_head);
+		if (!skb)
+			break;
+
+		dev_kfree_skb_any(skb);
+	} while (!skb_queue_empty(sk_head));
 
 	vfree(user);
 }
