@@ -103,7 +103,7 @@ struct nss_crypto_session_data {
 	const uint8_t *cipher_key;		/**< Cipher key */
 	const uint8_t *auth_key;		/**< Authentication key */
 	const uint8_t *nonce;			/**< Nonce */
-
+	uint16_t auth_keylen;			/**< Authentication key length */
 	uint16_t sec_key_offset;		/**< Secure offset */
 	enum nss_crypto_cmn_algo algo;		/**< Algorithm */
 	bool sec_key;				/**< Secure offset is enabled */
