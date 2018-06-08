@@ -628,7 +628,8 @@ static nss_crypto_status_t nss_crypto_validate_auth(struct nss_crypto_key *auth,
 	/*
 	 * SHA256-HMAC
 	 */
-	if ((auth->algo == NSS_CRYPTO_AUTH_SHA256_HMAC) && (auth->key_len == NSS_CRYPTO_KEYLEN_SHA256HMAC)) {
+	if ((auth->algo == NSS_CRYPTO_AUTH_SHA256_HMAC)
+			&& (auth->key_len <= NSS_CRYPTO_KEYLEN_SHA256HMAC)) {
 
 		auth_cfg->iv = (uint32_t *)&fips_sha256_iv[0];
 
