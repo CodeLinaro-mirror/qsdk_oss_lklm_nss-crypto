@@ -539,7 +539,8 @@ void nss_crypto_delayed_free(struct work_struct *work)
 		return;
 
 	default:
-		BUG_ON(1);
+		nss_crypto_warn("%p: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
+		goto free;
 	}
 
 	/*
@@ -554,6 +555,7 @@ void nss_crypto_delayed_free(struct work_struct *work)
 		return;
 	}
 
+free:
 	if (ctx->dentry)
 		debugfs_remove_recursive(ctx->dentry);
 
