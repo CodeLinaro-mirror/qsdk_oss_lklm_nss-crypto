@@ -169,6 +169,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
+	[NSS_CRYPTO_CMN_ALGO_SHA384_HASH] = {
+		.name = "qcom,sha384-hash",
+		.digest_sz = SHA384_DIGEST_SIZE,
+		.auth_blk_len = SHA384_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HMAC] = {
 		.name = "qcom,sha160-hmac",
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -180,6 +187,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,sha256-hmac",
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_SHA384_HMAC] = {
+		.name = "qcom,sha384-hmac",
+		.digest_sz = SHA384_DIGEST_SIZE,
+		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
