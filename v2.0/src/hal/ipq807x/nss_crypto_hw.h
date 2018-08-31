@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,8 @@
 #ifndef __NSS_CRYPTO_ENGINE_H
 #define __NSS_CRYPTO_ENGINE_H
 
-extern int nss_crypto_eip197_init(struct platform_device *pdev, char *name);
+extern void nss_crypto_hw_deinit(struct platform_device *pdev);
+extern int nss_crypto_hw_init(struct platform_device *pdev);
 
 #endif /* __NSS_CRYPTO_ENGINE_H */
 

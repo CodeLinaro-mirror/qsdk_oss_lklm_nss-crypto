@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -23,7 +23,7 @@
 
 #include "nss_crypto_ctrl.h"
 #include "nss_crypto_debugfs.h"
-#include "engines/nss_crypto_eip197.h"
+#include "nss_crypto_eip197.h"
 
 /*
  * nss_crypto_eip197_ctx_info
@@ -501,7 +501,7 @@ int nss_crypto_eip197_node_init(struct platform_device *pdev, const char *name)
  * nss_crypto_eip197_init()
  *	performs HW initialization, FW boot and DMA initialization
  */
-int nss_crypto_eip197_init(struct platform_device *pdev, const char *name)
+int nss_crypto_eip197_init(struct platform_device *pdev)
 {
 	struct device_node *np = of_node_get(pdev->dev.of_node);
 	struct resource crypto_res = {0};
@@ -526,7 +526,7 @@ int nss_crypto_eip197_init(struct platform_device *pdev, const char *name)
 	/*
 	 * initialize the EIP197 node
 	 */
-	status = nss_crypto_eip197_node_init(pdev, name);
+	status = nss_crypto_eip197_node_init(pdev, "eip197v1");
 	if (status < 0) {
 		nss_crypto_warn("%p: unable to intialize node, status(%d)\n", pdev, status);
 		return status;

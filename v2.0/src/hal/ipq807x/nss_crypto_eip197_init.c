@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -29,7 +29,7 @@
 #include <nss_crypto_api.h>
 #include "nss_crypto_hlos.h"
 #include "nss_crypto_ctrl.h"
-#include <engines/nss_crypto_eip197.h>
+#include "nss_crypto_eip197.h"
 
 #define NSS_CRYPTO_EIP197_MAX_STR_LENGTH 64
 #define NSS_CRYPTO_EIP197_NEW_LINE 16

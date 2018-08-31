@@ -1,4 +1,4 @@
-/* Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -597,4 +597,6 @@ extern void nss_crypto_eip197_hw_init(struct platform_device *pdev, struct devic
 extern ssize_t nss_crypto_eip197_read_dma_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos);
 extern ssize_t nss_crypto_eip197_read_hia_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos);
 extern ssize_t nss_crypto_eip197_read_pe_reg(struct file *filep, char __user *buffer, size_t count, loff_t *ppos);
+
+extern int nss_crypto_eip197_init(struct platform_device *pdev);
 #endif /* __NSS_CRYPTO_EIP197_H */

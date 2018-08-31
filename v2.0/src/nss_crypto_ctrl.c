@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -44,7 +44,7 @@
 #include <crypto/md5.h>
 #include <crypto/ctr.h>
 #include <crypto/ghash.h>
-#include <engines/nss_crypto_engine.h>
+#include <nss_crypto_hw.h>
 #include <nss_crypto_hlos.h>
 #include <nss_api_if.h>
 #include <nss_crypto_api.h>
@@ -1312,13 +1312,7 @@ MODULE_DEVICE_TABLE(of, nss_crypto_dt_ids);
  */
 static int nss_crypto_device_probe(struct platform_device *pdev)
 {
-	struct device_node *np = of_node_get(pdev->dev.of_node);
-	int error = -ENODEV;
-
-	if (of_find_node_by_name(of_get_parent(np), "eip197_node"))
-		error = nss_crypto_eip197_init(pdev, "eip197_node");
-
-	return error;
+	return nss_crypto_hw_init(pdev);
 }
 
 /*
@@ -1327,6 +1321,7 @@ static int nss_crypto_device_probe(struct platform_device *pdev)
  */
 static int nss_crypto_device_remove(struct platform_device *pdev)
 {
+	nss_crypto_hw_deinit(pdev);
 	nss_crypto_node_free(platform_get_drvdata(pdev));
 	return 0;
 };
