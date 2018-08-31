@@ -14,6 +14,11 @@ SRC_DIR=hal/ipq807x
 ccflags-y += -DNSS_CRYPTO_IPQ807X_SUPPORT
 endif
 
+ifneq (, $(findstring ipq60xx, $(SoC)))
+SRC_DIR=hal/ipq60xx
+ccflags-y += -DNSS_CRYPTO_IPQ60XX_SUPPORT
+endif
+
 ccflags-y += -I$(obj)/$(SRC_DIR)/
 
 obj-m += $(NSS_CRYPTO_MOD_NAME).o

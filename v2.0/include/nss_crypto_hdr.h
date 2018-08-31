@@ -26,7 +26,7 @@
 #define NSS_CRYPTO_FRAG_FLAGS_LAST 0x2
 
 #if defined(NSS_CRYPTO_DEBUG)
-#define NSS_CRYPTO_VERIFY_HDR(ch, len) BUG(ch->tot_len < len)
+#define NSS_CRYPTO_VERIFY_HDR(ch, len) BUG_ON(ch->tot_len < len)
 #else
 #define NSS_CRYPTO_VERIFY_HDR(ch, len)
 #endif
