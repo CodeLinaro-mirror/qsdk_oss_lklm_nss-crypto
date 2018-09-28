@@ -169,9 +169,15 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
+	[NSS_CRYPTO_CMN_ALGO_SHA384_HASH] = {
+		.name = "qcom,sha384-hash",
+		.digest_sz = SHA384_DIGEST_SIZE,
+		.auth_blk_len = SHA384_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HMAC] = {
 		.name = "qcom,sha160-hmac",
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = false,
@@ -179,16 +185,21 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA256_HMAC] = {
 		.name = "qcom,sha256-hmac",
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
 		.auth_blk_len = SHA256_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_SHA384_HMAC] = {
+		.name = "qcom,sha384-hmac",
+		.digest_sz = SHA384_DIGEST_SIZE,
+		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_GCM_GMAC] = {
 		.name = "qcom,aes128-gcm-gmac",
 		.cipher_key_len = AES_KEYSIZE_128,
-		.auth_key_len = GHASH_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = 8,
 		.digest_sz = GHASH_DIGEST_SIZE,
@@ -200,7 +211,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes128-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_128,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -211,7 +221,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes128-cbc-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_128,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -222,7 +231,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes128-ctr-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_128,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -234,7 +242,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes128-ctr-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_128,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -246,7 +253,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES192_GCM_GMAC] = {
 		.name = "qcom,aes192-gcm-gmac",
 		.cipher_key_len = AES_KEYSIZE_192,
-		.auth_key_len = GHASH_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = 8,
 		.digest_sz = GHASH_DIGEST_SIZE,
@@ -258,7 +264,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes192-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_192,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -269,7 +274,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes192-cbc-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_192,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -280,7 +284,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes192-ctr-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_192,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -292,7 +295,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes192-ctr-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_192,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -304,7 +306,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES256_GCM_GMAC] = {
 		.name = "qcom,aes256-gcm-gmac",
 		.cipher_key_len = AES_KEYSIZE_256,
-		.auth_key_len = GHASH_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = 8,
 		.digest_sz = GHASH_DIGEST_SIZE,
@@ -316,7 +317,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes256-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_256,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -327,7 +327,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes256-cbc-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_256,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -338,7 +337,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes256-ctr-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_256,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -350,7 +348,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes256-ctr-sha256-hmac",
 		.cipher_key_len = AES_KEYSIZE_256,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.iv_len = AES_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -362,7 +359,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC] = {
 		.name = "qcom,3des-cbc-sha160-hmac",
 		.cipher_key_len = DES3_EDE_KEY_SIZE,
-		.auth_key_len = SHA1_DIGEST_SIZE,
 		.cipher_blk_len = DES3_EDE_BLOCK_SIZE,
 		.iv_len = DES3_EDE_BLOCK_SIZE,
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -373,7 +369,6 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA256_HMAC] = {
 		.name = "qcom,3des-cbc-sha256-hmac",
 		.cipher_key_len = DES3_EDE_KEY_SIZE,
-		.auth_key_len = SHA256_DIGEST_SIZE,
 		.cipher_blk_len = DES3_EDE_BLOCK_SIZE,
 		.iv_len = DES3_EDE_BLOCK_SIZE,
 		.digest_sz = SHA256_DIGEST_SIZE,
@@ -544,7 +539,8 @@ void nss_crypto_delayed_free(struct work_struct *work)
 		return;
 
 	default:
-		BUG_ON(1);
+		nss_crypto_warn("%p: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
+		goto free;
 	}
 
 	/*
@@ -559,6 +555,7 @@ void nss_crypto_delayed_free(struct work_struct *work)
 		return;
 	}
 
+free:
 	if (ctx->dentry)
 		debugfs_remove_recursive(ctx->dentry);
 
@@ -670,9 +667,10 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 */
 	if (data->auth_key) {
 		BUG_ON(!ctx->info->auth_valid);
-		BUG_ON(ctx->info->digest_sz > NSS_CRYPTO_AUTH_KEYLEN_MAX);
+		BUG_ON(ARRAY_SIZE(msg->auth_key) < data->auth_keylen);
+		BUG_ON(ctx->info->auth_blk_len < data->auth_keylen);
 
-		memcpy((uint8_t *)&msg->auth_key[0], data->auth_key, ctx->info->digest_sz);
+		memcpy((uint8_t *)&msg->auth_key[0], data->auth_key, data->auth_keylen);
 	}
 
 	/*
@@ -699,6 +697,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 */
 	msg->index = idx;
 	msg->algo = data->algo;
+	msg->auth_keylen = data->auth_keylen;
 
 	if (data->sec_key) {
 		msg->sec_offset = data->sec_key_offset;

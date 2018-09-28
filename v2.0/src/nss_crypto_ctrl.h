@@ -39,7 +39,6 @@ typedef int (*nss_crypto_ctx_fill_method_t)(struct nss_crypto_ctx *ctx, struct n
 struct nss_crypto_algo_info {
 	const char *name;			/* name of the algorithm DTSI specific */
 	uint16_t cipher_key_len;		/* cipher key length */
-	uint16_t auth_key_len;			/* authentication key length */
 	uint16_t cipher_blk_len;		/* cipher block len */
 	uint16_t iv_len;			/* iv len */
 	uint16_t digest_sz;			/* digest size */
