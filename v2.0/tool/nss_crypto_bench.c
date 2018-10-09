@@ -499,9 +499,11 @@ static int32_t crypto_bench_prep_op(void)
 	if ((param.ciph_type == 1) || (param.ciph_type == 2)) {
 		data.cipher_key = &cipher_key[0];
 		data.auth_key = &auth_key[0];
+		data.auth_keylen = ARRAY_SIZE(auth_key);
 	} else if (param.ciph_type == 3) {
 		data.cipher_key = &triple_des_cipher_key[0];
 		data.auth_key = &triple_des_auth_key[0];
+		data.auth_keylen = ARRAY_SIZE(triple_des_auth_key);
 	}
 
 	if (param.op_type == 3) {
