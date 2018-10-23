@@ -237,7 +237,7 @@ void nss_crypto_transform_done(struct net_device *net, struct sk_buff *skb,
  * API expects that generated HMAC is at the end of the packet.
  *
  */
-void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *sg)
+void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *sg, uint16_t auth_len)
 {
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	struct nss_crypto_frag *in, *out;
@@ -295,16 +295,23 @@ void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *sg
 	}
 
 	/*
+	 * We need to reduce the auth_len from the payload if the HW
+	 * is generates it. Otherwise, the user passes zero when
+	 * it is already available
+	 */
+	ch->data_len -= auth_len;
+
+	/*
 	 * Mark first descriptor and last descriptor
 	 * with FIRST and LAST flags. Also, we need to
 	 * adjust the hmac length in the last descriptor
 	 */
 	in[0].flags = NSS_CRYPTO_FRAG_FLAGS_FIRST;
 	in[nsegs - 1].flags |= NSS_CRYPTO_FRAG_FLAGS_LAST;
+	in[nsegs - 1].len -= auth_len;
 
 	out[0].flags = NSS_CRYPTO_FRAG_FLAGS_FIRST;
 	out[nsegs - 1].flags |= NSS_CRYPTO_FRAG_FLAGS_LAST;
-	out[nsegs - 1].len += ch->hmac_len;
 }
 EXPORT_SYMBOL(nss_crypto_hdr_map_sglist);
 

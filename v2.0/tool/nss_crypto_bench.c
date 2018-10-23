@@ -694,7 +694,7 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	nss_crypto_hdr_set_skip(ch, op->cipher_skip);
 	nss_crypto_hdr_set_op(ch, op->op_dir);
 
-	nss_crypto_hdr_map_sglist(ch, &src);
+	nss_crypto_hdr_map_sglist(ch, &src, icv_len);
 
 	fixed_size = 2 * ch->in_frags * sizeof(struct nss_crypto_frag) + sizeof(struct nss_crypto_hdr);
 	tot_len = ch->iv_len + ch->hmac_len + ch->buf_len + ch->priv_len + fixed_size;
