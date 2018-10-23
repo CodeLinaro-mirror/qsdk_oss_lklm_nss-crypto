@@ -179,7 +179,7 @@ void nss_crypto_hdr_free(struct nss_crypto_user *user, struct nss_crypto_hdr *ch
  * @return
  * None.
  */
-void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *src);
+void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *src, uint16_t auth_len);
 
 /*
  * nss_crypto_hdr_map_sglist_ahash
