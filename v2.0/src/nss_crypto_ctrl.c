@@ -1048,7 +1048,9 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	uint16_t hdr_pool_sz, default_hdr_sz;
 	struct nss_crypto_user *user;
+	size_t aligned_offset;
 	struct sk_buff *skb;
+	size_t aligned_size;
 	int num_skb;
 
 	if (!of_find_compatible_node(NULL, NULL, "qcom,nss-crypto"))
@@ -1083,15 +1085,24 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 
 	user->app_data = app_data;
 
+	aligned_size = ALIGN(default_hdr_sz, SMP_CACHE_BYTES) + SMP_CACHE_BYTES;
+
 	/*
 	 * Try allocating atleast 1 SKB for the pool
 	 */
-	skb = dev_alloc_skb(default_hdr_sz);
+	skb = alloc_skb(aligned_size, GFP_KERNEL);
 	if (!skb) {
 		nss_crypto_warn("%p:unable to allocate atleast 1 skb\n", ctx);
 		vfree(user);
 		return NULL;
 	}
+
+	/*
+	 * We are aligning the skb->data to SMP_CACHE_BYTES and
+	 * adding an extra headroom of SMP_CACHE_BYTES
+	 */
+	aligned_offset = PTR_ALIGN(skb->data, SMP_CACHE_BYTES) - skb->head;
+	skb_reserve(skb, SMP_CACHE_BYTES + aligned_offset);
 
 	/*
 	 * We dont need to take any locks at this point as
@@ -1105,9 +1116,16 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 	 * hdr pool size worth of SKBs
 	 */
 	for (num_skb = 1; num_skb < hdr_pool_sz; num_skb++) {
-		skb = dev_alloc_skb(default_hdr_sz);
+		skb = alloc_skb(aligned_size, GFP_KERNEL);
 		if (!skb)
 			break;
+
+		/*
+		 * We are aligning the skb->data to SMP_CACHE_BYTES and
+		 * adding an extra headroom of SMP_CACHE_BYTES
+		 */
+		aligned_offset = PTR_ALIGN(skb->data, SMP_CACHE_BYTES) - skb->head;
+		skb_reserve(skb, SMP_CACHE_BYTES + aligned_offset);
 		__skb_queue_head(&user->sk_head, skb);
 	}
 
