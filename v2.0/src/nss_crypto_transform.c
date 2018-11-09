@@ -566,6 +566,14 @@ void nss_crypto_hdr_map_skb(struct nss_crypto_hdr *ch, struct sk_buff *skb)
 	node = ctx->node;
 	kref_put(&ctx->ref, nss_crypto_ctx_free);
 
+	/*
+	 * We should have space for adding the hmac. It is typically expected the caller submitting
+	 * for AEAD transform has enough tailroom to add the HMAC.
+	 * In case there is not enough tailroom for HMAC, we will expand the tailroom
+	 */
+	if ((skb_tailroom(skb) < ch->hmac_len) && pskb_expand_head(skb, 0, ch->hmac_len, GFP_KERNEL))
+		return;
+
 	buf = nss_crypto_hdr_get_buf(ch);
 	buf->mapped = true;
 
@@ -585,19 +593,6 @@ void nss_crypto_hdr_map_skb(struct nss_crypto_hdr *ch, struct sk_buff *skb)
 		nss_crypto_hdr_map_skb_fraglist(ch, skb, node->dev);
 		return;
 	}
-
-	/*
-	 * we should have space for adding the hmac. It
-	 * is typically expected the caller submitting
-	 * for AEAD transform has enough tailroom to
-	 * add the HMAC.
-	 *
-	 * TODO: Hence, this may not be essential but
-	 * if there is a failure we have to expand the
-	 * tailroom
-	 */
-	if (skb_tailroom(skb) < ch->hmac_len)
-		return;
 
 	/*
 	 * find the start of the fragment structure in crypto header
