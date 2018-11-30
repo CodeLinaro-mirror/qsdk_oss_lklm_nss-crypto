@@ -684,7 +684,7 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	iv_len = (param.ciph_type <= 2) ? NSS_CRYPTO_MAX_IVLEN_AES : NSS_CRYPTO_MAX_IVLEN_DES;
 	icv_len = param.hash_len;
 
-	sg_init_one(&src, op->data_vaddr, op->data_len);
+	sg_init_one(&src, op->data_vaddr, op->data_len + icv_len);
 	num_frag = sg_nents(&src);
 
 	ch = nss_crypto_hdr_alloc(crypto_hdl, crypto_sid[curr_sid], num_frag, iv_len, icv_len, ahash);
