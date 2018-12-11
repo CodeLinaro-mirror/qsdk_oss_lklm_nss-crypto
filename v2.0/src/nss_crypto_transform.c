@@ -327,7 +327,7 @@ EXPORT_SYMBOL(nss_crypto_hdr_map_sglist);
  * can maps its request data into a crypto specific request data.
  *
  */
-void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterlist *sg)
+void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterlist *sg, uint16_t auth_len)
 {
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	struct nss_crypto_frag *in, *out;
@@ -384,6 +384,16 @@ void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterli
 		out[i].addr = addr;
 		out[i].len = len;
 	}
+
+	/*
+	 * We need to reduce the auth_len from the payload if the HW
+	 * is generates it. Otherwise, the user passes zero when
+	 * it is already available. We also need to adjust the in and out
+	 * length of 2nd last fragment.
+	 */
+	ch->data_len -= auth_len;
+	in[nsegs - 1].len -= auth_len;
+	out[nsegs - 1].len -= auth_len;
 
 	/*
 	 * Mark first descriptor and last descriptor

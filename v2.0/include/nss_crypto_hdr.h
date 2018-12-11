@@ -175,6 +175,7 @@ void nss_crypto_hdr_free(struct nss_crypto_user *user, struct nss_crypto_hdr *ch
  *
  * @param[in] ch crypto header
  * @param[in] src SGLIST list
+ * @param[in] auth_len authentication length for the packet
 
  * @return
  * None.
@@ -191,11 +192,12 @@ void nss_crypto_hdr_map_sglist(struct nss_crypto_hdr *ch, struct scatterlist *sr
  *
  * @param[in] ch crypto header
  * @param[in] src SGLIST list
+ * @param[in] auth_len authentication length for the packet
 
  * @return
  * None.
  */
-void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterlist *src);
+void nss_crypto_hdr_map_sglist_ahash(struct nss_crypto_hdr *ch, struct scatterlist *src, uint16_t auth_len);
 
 /*
  * nss_crypto_hdr_map_skb
