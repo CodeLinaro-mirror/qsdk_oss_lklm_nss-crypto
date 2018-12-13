@@ -582,6 +582,12 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 
 	BUG_ON(in_atomic());
 
+	/*
+	 * Incase of failure to alloc crypto session in FW, free function see
+	 * this big value and return;
+	 */
+	*session = U16_MAX;
+
 	if (data->algo > NSS_CRYPTO_CMN_ALGO_MAX) {
 		nss_crypto_warn("%p: invalid configuration (algo - %d)\n", user, data->algo);
 		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
@@ -751,9 +757,15 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 {
 	enum nss_crypto_cmn_msg_type type = NSS_CRYPTO_CMN_MSG_TYPE_CLEAR_CTX;
 	struct nss_crypto_ctrl *ctrl = &g_control;
-	uint16_t idx = NSS_CRYPTO_SESSION_INDEX(session, ctrl->max_contexts);
 	struct nss_crypto_ctx *ctx;
+	uint16_t idx;
 
+	if (session >= ctrl->max_contexts) {
+		nss_crypto_warn("%p: Invalid session id=%d (max= %d)\n", user, session, ctrl->max_contexts);
+		return;
+	}
+
+	idx = NSS_CRYPTO_SESSION_INDEX(session, ctrl->max_contexts);
 	mutex_lock(&ctrl->mutex);
 
 	ctx = &ctrl->ctx_tbl[idx];
