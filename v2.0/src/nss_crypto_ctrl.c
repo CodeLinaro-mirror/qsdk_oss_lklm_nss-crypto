@@ -957,7 +957,7 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	/*
 	 * read maximum DMA rings
 	 */
-	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask)) {
+	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask) < 0) {
 		nss_crypto_warn("%p: unable to read node DMA mask\n", np);
 		return -ENOENT;
 	}
@@ -1257,7 +1257,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 
 	np = of_node_get(pdev->dev.of_node);
 
-	if (of_property_read_u32(np, "qcom,max-contexts", &ctrl->max_contexts)) {
+	if (of_property_read_u32(np, "qcom,max-contexts", &ctrl->max_contexts) < 0) {
 		nss_crypto_err("%p: max session undefined\n", pdev);
 		return -EINVAL;
 	}
@@ -1276,7 +1276,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 		return -ENOSPC;
 	}
 
-	if (of_property_read_u32(np, "qcom,max-context-size", &ctrl->max_ctx_size)) {
+	if (of_property_read_u32(np, "qcom,max-context-size", &ctrl->max_ctx_size) < 0) {
 		nss_crypto_err("%p: max session undefined\n", pdev);
 		return -EINVAL;
 	}

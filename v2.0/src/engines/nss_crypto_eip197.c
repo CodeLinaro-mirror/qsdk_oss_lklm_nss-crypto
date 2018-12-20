@@ -253,10 +253,10 @@ static int nss_crypto_eip197_clock_init(struct platform_device *pdev)
 	const char *clk_string;
 	struct property *prop;
 	uint64_t *clk_rate;
+	size_t clk_entries;
+	int count, len, i;
 	struct clk *clk;
 	int status = 0;
-	int count, i;
-	size_t size;
 
 	/*
 	 * Enable crypto clock
@@ -270,19 +270,20 @@ static int nss_crypto_eip197_clock_init(struct platform_device *pdev)
 	/*
 	 * Parse clock frequency from crypto DTSI node
 	 */
-	prop = of_find_property(np, "clock-frequency", NULL);
+	prop = of_find_property(np, "clock-frequency", &len);
 	if (!prop) {
 		nss_crypto_info("crypto clock frequency entry not found\n");
 		return 0;
 	}
 
-	size = prop->length / sizeof(*clk_rate);
+	BUG_ON(len < sizeof(*clk_rate));
+	clk_entries = len / sizeof(*clk_rate);
 
-	clk_rate = kzalloc(size, GFP_KERNEL);
+	clk_rate = kzalloc(len, GFP_KERNEL);
 	if (!clk_rate)
 		return -ENOMEM;
 
-	if (of_property_read_u64_array(np, "clock-frequency", clk_rate, size)) {
+	if (of_property_read_u64_array(np, "clock-frequency", clk_rate, clk_entries) < 0) {
 		status = -EINVAL;
 		goto free;
 	}
@@ -476,7 +477,7 @@ int nss_crypto_eip197_init(struct platform_device *pdev, const char *name)
 	}
 
 	for_each_child_of_node(np, child) {
-		if (of_property_read_u32(child, "reg_offset", &reg_offset)) {
+		if (of_property_read_u32(child, "reg_offset", &reg_offset) < 0) {
 			nss_crypto_warn("%p: unable to read reg_offset\n", child);
 			continue;
 		}
