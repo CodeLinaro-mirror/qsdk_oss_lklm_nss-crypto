@@ -148,6 +148,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 	},
+	[NSS_CRYPTO_CMN_ALGO_MD5_HASH] = {
+		.name = "qcom,md5-hash",
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HASH] = {
 		.name = "qcom,sha160-hash",
 		.digest_sz = SHA1_DIGEST_SIZE,
@@ -173,6 +180,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,sha384-hash",
 		.digest_sz = SHA384_DIGEST_SIZE,
 		.auth_blk_len = SHA384_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_MD5_HMAC] = {
+		.name = "qcom,md5-hmac",
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
@@ -208,6 +222,16 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_valid = false,
 		.nonce_sz = 4,
 	},
+	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_MD5_HMAC] = {
+		.name = "qcom,aes128-cbc-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_128,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes128-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_128,
@@ -227,6 +251,17 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_MD5_HMAC] = {
+		.name = "qcom,aes128-ctr-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_128,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes128-ctr-sha160-hmac",
@@ -261,6 +296,16 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_valid = false,
 		.nonce_sz = 4,
 	},
+	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_MD5_HMAC] = {
+		.name = "qcom,aes192-cbc-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_192,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes192-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_192,
@@ -280,6 +325,17 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_MD5_HMAC] = {
+		.name = "qcom,aes192-ctr-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_192,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes192-ctr-sha160-hmac",
@@ -314,6 +370,16 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_valid = false,
 		.nonce_sz = 4,
 	},
+	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_MD5_HMAC] = {
+		.name = "qcom,aes256-cbc-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_256,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes256-cbc-sha160-hmac",
 		.cipher_key_len = AES_KEYSIZE_256,
@@ -333,6 +399,17 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+	},
+	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_MD5_HMAC] = {
+		.name = "qcom,aes256-ctr-md5-hmac",
+		.cipher_key_len = AES_KEYSIZE_256,
+		.cipher_blk_len = AES_BLOCK_SIZE,
+		.iv_len = AES_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
+		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes256-ctr-sha160-hmac",
@@ -355,6 +432,16 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+	},
+	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_MD5_HMAC] = {
+		.name = "qcom,3des-cbc-md5-hmac",
+		.cipher_key_len = DES3_EDE_KEY_SIZE,
+		.cipher_blk_len = DES3_EDE_BLOCK_SIZE,
+		.iv_len = DES3_EDE_BLOCK_SIZE,
+		.digest_sz = MD5_DIGEST_SIZE,
+		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
+		.cipher_valid = true,
+		.auth_valid = true,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC] = {
 		.name = "qcom,3des-cbc-sha160-hmac",
@@ -582,6 +669,12 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 
 	BUG_ON(in_atomic());
 
+	/*
+	 * Incase of failure to alloc crypto session in FW, free function see
+	 * this big value and return;
+	 */
+	*session = U16_MAX;
+
 	if (data->algo > NSS_CRYPTO_CMN_ALGO_MAX) {
 		nss_crypto_warn("%p: invalid configuration (algo - %d)\n", user, data->algo);
 		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
@@ -751,9 +844,15 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 {
 	enum nss_crypto_cmn_msg_type type = NSS_CRYPTO_CMN_MSG_TYPE_CLEAR_CTX;
 	struct nss_crypto_ctrl *ctrl = &g_control;
-	uint16_t idx = NSS_CRYPTO_SESSION_INDEX(session, ctrl->max_contexts);
 	struct nss_crypto_ctx *ctx;
+	uint16_t idx;
 
+	if (session >= ctrl->max_contexts) {
+		nss_crypto_warn("%p: Invalid session id=%d (max= %d)\n", user, session, ctrl->max_contexts);
+		return;
+	}
+
+	idx = NSS_CRYPTO_SESSION_INDEX(session, ctrl->max_contexts);
 	mutex_lock(&ctrl->mutex);
 
 	ctx = &ctrl->ctx_tbl[idx];
@@ -945,7 +1044,7 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	/*
 	 * read maximum DMA rings
 	 */
-	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask)) {
+	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask) < 0) {
 		nss_crypto_warn("%p: unable to read node DMA mask\n", np);
 		return -ENOENT;
 	}
@@ -1245,7 +1344,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 
 	np = of_node_get(pdev->dev.of_node);
 
-	if (of_property_read_u32(np, "qcom,max-contexts", &ctrl->max_contexts)) {
+	if (of_property_read_u32(np, "qcom,max-contexts", &ctrl->max_contexts) < 0) {
 		nss_crypto_err("%p: max session undefined\n", pdev);
 		return -EINVAL;
 	}
@@ -1264,7 +1363,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 		return -ENOSPC;
 	}
 
-	if (of_property_read_u32(np, "qcom,max-context-size", &ctrl->max_ctx_size)) {
+	if (of_property_read_u32(np, "qcom,max-context-size", &ctrl->max_ctx_size) < 0) {
 		nss_crypto_err("%p: max session undefined\n", pdev);
 		return -EINVAL;
 	}
