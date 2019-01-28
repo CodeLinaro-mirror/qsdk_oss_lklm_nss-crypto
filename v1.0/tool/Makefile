@@ -1,4 +1,4 @@
-# Copyright (c) 2013, 2016, The Linux Foundation. All rights reserved.
+# Copyright (c) 2013, 2016, 2019 The Linux Foundation. All rights reserved.
 #
 # Permission to use, copy, modify, and/or distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -21,3 +21,4 @@ obj ?= .
 #ccflags-y += -DCONFIG_NSS_CRYPTO_TOOL_DBG
 ccflags-y += -DNSS_CRYPTO_BUILD_ID=\"'Build_ID - $(shell date +'%m/%d/%y, %H:%M:%S')'\"
 ccflags-y += -I$(obj)/../include -I$(obj)/../src -I$(obj)/
+ccflags-y += -Werror
