@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -108,9 +108,10 @@ struct nss_crypto_ctrl {
 	struct nss_ctx_instance *nss_msg_hdl;	/* NSS driver message handle */
 	struct dentry *dentry;			/* debugfs driver stats entry */
 
-	struct dentry *ctrl_dentry;			/* debugfs driver stats entry */
-	struct nss_crypto_ctrl_stats cstats; /* control stats */
+	struct dentry *ctrl_dentry;		/* debugfs driver stats entry */
+	struct nss_crypto_ctrl_stats cstats; 	/* control stats */
 
+	atomic_t nss_active;			/* crypto is active in NSS */
 	bool active;				/* crypto is active */
 };
 

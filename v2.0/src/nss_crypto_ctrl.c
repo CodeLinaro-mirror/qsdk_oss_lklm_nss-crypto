@@ -579,6 +579,11 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 	}
 
 	/*
+	 * Mark NSS FW Crypto as active.
+	 */
+	atomic_set(&ctrl->nss_active, 1);
+
+	/*
 	 * check if we need to process the message
 	 */
 	if (!process)
@@ -1444,9 +1449,9 @@ void nss_crypto_delayed_probe(struct work_struct *work)
 	ctrl = container_of(to_delayed_work(work), struct nss_crypto_ctrl, probe_work);
 
 	/*
-	 * Check if NSS FW is initialized
+	 * Check if NSS FW is active
 	 */
-	if (nss_get_state(ctrl->nss_msg_hdl) != NSS_STATE_INITIALIZED) {
+	if (!atomic_read(&ctrl->nss_active)) {
 		schedule_delayed_work(&ctrl->probe_work, NSS_CRYPTO_DELAYED_INIT_TICKS);
 		return;
 	}
@@ -1500,6 +1505,7 @@ static int __init nss_crypto_module_init(void)
 	 * active
 	 */
 	ctrl->active = false;
+	atomic_set(&ctrl->nss_active, 0);
 
 	if (!of_find_compatible_node(NULL, NULL, "qcom,nss-crypto")) {
 		nss_crypto_info_always("module loaded for symbol link\n");
