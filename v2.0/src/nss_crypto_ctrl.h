@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2019 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -86,7 +86,7 @@ struct nss_crypto_ctrl_stats {
 	atomic_t free_fail_msg;		/**< Tx msg failure */
 	atomic_t free_fail_inuse;	/**< Session in use */
 	atomic_t free_fail_queue;	/**< queue congested */
-	atomic_t free_fail_retry;	/**< Session free retry failure */
+	atomic_t free_delayed;		/**< Session free delayed */
 };
 
 /*
