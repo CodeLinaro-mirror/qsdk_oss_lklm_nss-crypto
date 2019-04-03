@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2015, 2017-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015, 2017-2019, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -80,7 +80,7 @@ static void nss_crypto_debugfs_add_ctrl_stats(struct dentry *parent, struct nss_
 	debugfs_create_atomic_t("ctx_free_fail_queue", S_IRUGO, parent, &stats->free_fail_queue);
 	debugfs_create_atomic_t("ctx_free_fail_msg", S_IRUGO, parent, &stats->free_fail_msg);
 	debugfs_create_atomic_t("ctx_free_fail_inuse", S_IRUGO, parent, &stats->free_fail_inuse);
-	debugfs_create_atomic_t("ctx_free_fail_retry", S_IRUGO, parent, &stats->free_fail_retry);
+	debugfs_create_atomic_t("ctx_free_delayed", S_IRUGO, parent, &stats->free_delayed);
 }
 
 /*
