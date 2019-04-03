@@ -55,7 +55,7 @@
 
 struct nss_crypto_ctrl g_control = { {0} };
 
-#define NSS_CRYPTO_TX_RETRY_TICKS msecs_to_jiffies(100/* msecs */)
+#define NSS_CRYPTO_DELAYED_FREE_TICKS msecs_to_jiffies(10/* msecs */)
 #define NSS_CRYPTO_DELAYED_INIT_TICKS msecs_to_jiffies(100/* msecs */)
 
 /*
@@ -495,7 +495,7 @@ static void nss_crypto_ctrl_stats_init(struct nss_crypto_ctrl_stats *stats)
 	atomic_set(&stats->free_fail_msg, 0);
 	atomic_set(&stats->free_fail_inuse, 0);
 	atomic_set(&stats->free_fail_queue, 0);
-	atomic_set(&stats->free_fail_retry, 0);
+	atomic_set(&stats->free_delayed, 0);
 }
 
 /*
@@ -612,6 +612,59 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 }
 
 /*
+ * nss_crypto_free()
+ *	Free crypto context
+ */
+void nss_crypto_free(struct nss_crypto_ctx *ctx)
+{
+	struct nss_crypto_ctrl *ctrl = &g_control;
+	int32_t status;
+
+	/*
+	 * If, the NSS queue is congested then try few more times to see
+	 * if the message goes through. Otherwise the index will remain
+	 * in use and will not be allocated to any other user
+	 */
+	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &ctx->nim);
+	switch (status) {
+	case NSS_TX_SUCCESS:
+		break;
+
+	case NSS_TX_FAILURE_QUEUE:
+		/*
+		 * Queue congestion is a intermediate state. We should retry
+		 * again to see if it has cleared.
+		 */
+		atomic_inc(&ctrl->cstats.free_fail_queue);
+		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_DELAYED_FREE_TICKS);
+		return;
+
+	default:
+		atomic_inc(&ctrl->cstats.free_fail_msg);
+		nss_crypto_warn("%p: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
+		goto free;
+	}
+
+	/*
+	 * Check if the NSS is successful in deleting the context; otherwise
+	 * retry after sometime to see if the context can be released. This
+	 * will happen if the NSS crypto context has outstanding packets
+	 */
+	if (ctx->nim.cm.response != NSS_CMN_RESPONSE_ACK) {
+		atomic_inc(&ctrl->cstats.free_fail_inuse);
+		ctx->nim.cm.type = NSS_CRYPTO_CMN_MSG_TYPE_VERIFY_CTX;
+		schedule_delayed_work(&ctx->free_work, ctx->free_timeout);
+		return;
+	}
+
+free:
+	if (ctx->dentry)
+		debugfs_remove_recursive(ctx->dentry);
+
+	kref_put(&ctx->ref, nss_crypto_ctx_free);
+}
+
+/*
  * nss_crypto_delayed_free()
  *	delayed free worker for freeing up context later
  *
@@ -626,46 +679,10 @@ void nss_crypto_delayed_free(struct work_struct *work)
 {
 	struct nss_crypto_ctrl *ctrl = &g_control;
 	struct nss_crypto_ctx *ctx;
-	int32_t status;
 
 	ctx = container_of(to_delayed_work(work), struct nss_crypto_ctx, free_work);
-
-	/*
-	 * If, the NSS queue is congested then try few more times to see
-	 * if the message goes through. Otherwise the index will remain
-	 * in use and will not be allocated to any other user
-	 */
-	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &ctx->nim);
-	switch (status) {
-	case NSS_TX_SUCCESS:
-		break;
-
-	case NSS_TX_FAILURE_QUEUE:
-		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_TX_RETRY_TICKS);
-		return;
-
-	default:
-		nss_crypto_warn("%p: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
-		goto free;
-	}
-
-	/*
-	 * Check if the NSS is successful in deleting the context; otherwise
-	 * retry after sometime to see if the context can be released. This
-	 * will happen if the NSS crypto context has outstanding packets
-	 */
-	if (ctx->nim.cm.response != NSS_CMN_RESPONSE_ACK) {
-		atomic_inc(&ctrl->cstats.free_fail_retry);
-		ctx->nim.cm.type = NSS_CRYPTO_CMN_MSG_TYPE_VERIFY_CTX;
-		schedule_delayed_work(&ctx->free_work, ctx->free_timeout);
-		return;
-	}
-
-free:
-	if (ctx->dentry)
-		debugfs_remove_recursive(ctx->dentry);
-
-	kref_put(&ctx->ref, nss_crypto_ctx_free);
+	atomic_inc(&ctrl->cstats.free_delayed);
+	nss_crypto_free(ctx);
 }
 
 /*
@@ -877,7 +894,6 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	ctx = &ctrl->ctx_tbl[idx];
 	if (!kref_get_unless_zero(&ctx->ref)) {
 		mutex_unlock(&ctrl->mutex);
-		atomic_inc(&ctrl->cstats.free_fail_inuse);	/**< Sessions freed queue congested */
 		nss_crypto_warn("%p: session id(%d) not in use\n", user, idx);
 		return;
 	}
@@ -888,7 +904,16 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	nss_cmn_msg_init(&ctx->nim.cm, ctx->nss_ifnum, type, sizeof(ctx->nim) - sizeof(ctx->nim.cm), NULL, ctx);
 	ctx->nim.msg.ctx.index = idx;
 
-	schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_DELAYED_INIT_TICKS);
+	/*
+	 * Free is deferred if the call is in non-sleepable context
+	 */
+	if (in_atomic()) {
+		nss_crypto_info("%p: session free for idx(%d) is deferred\n", user, idx);
+		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_DELAYED_FREE_TICKS);
+		return;
+	}
+
+	nss_crypto_free(ctx);
 }
 EXPORT_SYMBOL(nss_crypto_session_free);
 
@@ -1445,6 +1470,7 @@ void nss_crypto_delayed_probe(struct work_struct *work)
 	struct nss_crypto_ctrl *ctrl;
 	struct nss_crypto_user *user;
 	struct nss_crypto_user *tmp;
+	struct list_head tmp_head;
 
 	ctrl = container_of(to_delayed_work(work), struct nss_crypto_ctrl, probe_work);
 
@@ -1479,14 +1505,14 @@ void nss_crypto_delayed_probe(struct work_struct *work)
 	 * same context in which they are registering.
 	 */
 	mutex_lock(&ctrl->mutex);
-
 	ctrl->active = true;
-	list_for_each_entry_safe(user, tmp, &ctrl->user_head, list) {
-		list_del_init(&user->list);
+	INIT_LIST_HEAD(&tmp_head);
+	list_splice_tail_init(&ctrl->user_head, &tmp_head);
+	mutex_unlock(&ctrl->mutex);
+
+	list_for_each_entry_safe(user, tmp, &tmp_head, list) {
 		user->ctx.attach(user->app_data, user);
 	}
-
-	mutex_unlock(&ctrl->mutex);
 }
 
 /*

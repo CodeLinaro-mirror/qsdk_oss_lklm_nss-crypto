@@ -86,7 +86,7 @@ struct nss_crypto_ctrl_stats {
 	atomic_t free_fail_msg;		/**< Tx msg failure */
 	atomic_t free_fail_inuse;	/**< Session in use */
 	atomic_t free_fail_queue;	/**< queue congested */
-	atomic_t free_fail_retry;	/**< Session free retry failure */
+	atomic_t free_delayed;		/**< Session free delayed */
 };
 
 /*
