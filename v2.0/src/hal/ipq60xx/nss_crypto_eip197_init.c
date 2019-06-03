@@ -290,7 +290,7 @@ static int nss_crypto_eip197_hw_reset(void __iomem *base_addr)
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PRIO2);
 	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_RA_PE_CTRL);
 	iowrite32(NSS_CRYPTO_EIP197_HIA_RST, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_THR_CTRL);
-	iowrite32(NSS_CRYPTO_EIP197_DSE_CFG_RESET, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_CFG);
+	iowrite32(NSS_CRYPTO_EIP197_DSE_CFG_RST, base_addr + NSS_CRYPTO_EIP197_HIA_DSE_CFG);
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_LO);
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_BASE_ADDR_HI);
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_HIA_LASIDE_SLAVE_CTRL0);
@@ -300,7 +300,7 @@ static int nss_crypto_eip197_hw_reset(void __iomem *base_addr)
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_IN_TBUF_THR);
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OUT_DBUF_THRES);
 	iowrite32(0x0, base_addr + NSS_CRYPTO_EIP197_PE_OUT_DBUF_THRES);
-	iowrite32(NSS_CRYPTO_EIP197_TOKEN_CTRL_RESET,
+	iowrite32(NSS_CRYPTO_EIP197_TOKEN_CTRL_RST,
 		base_addr + NSS_CRYPTO_EIP197_PE_EIP96_TOKEN_CTRL);
 
 	/*
@@ -321,9 +321,14 @@ static void nss_crypto_eip197_hw_setup_core(void __iomem *base_addr)
 	uint32_t val;
 
 	/*
+	 * MASTER BURST SIZE update
+	 */
+	iowrite32(NSS_CRYPTO_EIP197_MST_CFG, base_addr + NSS_CRYPTO_EIP197_MST_CTRL);
+
+	/*
 	 * HIA MASTER BURST SIZE update
 	 */
-	iowrite32(NSS_CRYPTO_EIP197_HIA_CFG, base_addr + NSS_CRYPTO_EIP197_MST_CTRL);
+	iowrite32(NSS_CRYPTO_EIP197_HIA_MST_CFG, base_addr + NSS_CRYPTO_EIP197_HIA_MST_CTRL);
 
 	/*
 	 * Data Fetch Engine configuration
