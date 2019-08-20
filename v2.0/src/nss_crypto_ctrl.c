@@ -204,6 +204,13 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = false,
 		.auth_valid = true,
 	},
+	[NSS_CRYPTO_CMN_ALGO_SHA224_HMAC] = {
+		.name = "qcom,sha224-hmac",
+		.digest_sz = SHA224_DIGEST_SIZE,
+		.auth_blk_len = SHA224_BLOCK_SIZE,
+		.cipher_valid = false,
+		.auth_valid = true,
+	},
 	[NSS_CRYPTO_CMN_ALGO_SHA256_HMAC] = {
 		.name = "qcom,sha256-hmac",
 		.digest_sz = SHA256_DIGEST_SIZE,
