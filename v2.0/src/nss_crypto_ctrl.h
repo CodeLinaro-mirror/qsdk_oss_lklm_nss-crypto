@@ -163,6 +163,10 @@ struct nss_crypto_engine {
 
 	phys_addr_t crypto_paddr;		/* starting physical address of Crypto regs */
 	void __iomem *crypto_vaddr;		/* starting virtual address of Crypto regs */
+
+	phys_addr_t dma_paddr;			/* starting physical address of BAM */
+	void __iomem *dma_vaddr;		/* starting virtual address of BAM */
+
 	struct dentry *dentry;                  /* entry for engine stats */
 	struct nss_crypto_debugfs_entry *debugfs_entries;	/* debugfs entries */
 	size_t debugfs_num_entries;		/* debugfs entries count */

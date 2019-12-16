@@ -522,8 +522,8 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 	/*
 	 * note: for EIP197 the crypto & dma base address are same
 	 */
-	eng->crypto_paddr = paddr;
-	eng->crypto_vaddr = vaddr;
+	eng->crypto_paddr = eng->dma_paddr = paddr;
+	eng->crypto_vaddr = eng->dma_vaddr = vaddr;
 
 	/*
 	 * initialize the H/W
