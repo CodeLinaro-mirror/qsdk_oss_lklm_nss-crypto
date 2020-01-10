@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2019-2020, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -554,7 +554,7 @@ int nss_crypto_eip197_node_init(struct platform_device *pdev, const char *name)
 	/*
 	 * allocate the EIP197 node
 	 */
-	node = nss_crypto_node_alloc(pdev, NSS_CRYPTO_EIP197_INTERFACE, name);
+	node = nss_crypto_node_alloc(pdev, NSS_CRYPTO_CMN_INTERFACE, name);
 	if (!node) {
 		nss_crypto_warn("%p: unable to allocate %s node\n", np, name);
 		return -ENOMEM;
