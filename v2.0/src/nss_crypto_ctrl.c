@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -67,6 +67,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.name = "qcom,NULL",
 		.cipher_valid = false,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC] = {
 		.name = "qcom,3des-cbc",
@@ -75,6 +76,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = DES3_EDE_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC] = {
 		.name = "qcom,aes128-cbc",
@@ -83,6 +85,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR] = {
 		.name = "qcom,aes128-ctr",
@@ -92,6 +95,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_ECB] = {
 		.name = "qcom,aes128-ecb",
@@ -99,6 +103,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC] = {
 		.name = "qcom,aes192-cbc",
@@ -107,6 +112,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR] = {
 		.name = "qcom,aes192-ctr",
@@ -116,6 +122,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_ECB] = {
 		.name = "qcom,aes192-ecb",
@@ -123,6 +130,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC] = {
 		.name = "qcom,aes256-cbc",
@@ -131,6 +139,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.iv_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR] = {
 		.name = "qcom,aes256-ctr",
@@ -140,6 +149,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_ECB] = {
 		.name = "qcom,aes256-ecb",
@@ -147,6 +157,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_blk_len = AES_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = false,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_MD5_HASH] = {
 		.name = "qcom,md5-hash",
@@ -154,6 +165,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HASH] = {
 		.name = "qcom,sha160-hash",
@@ -161,6 +173,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA224_HASH] = {
 		.name = "qcom,sha224-hash",
@@ -168,6 +181,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA224_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA256_HASH] = {
 		.name = "qcom,sha256-hash",
@@ -175,6 +189,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA384_HASH] = {
 		.name = "qcom,sha384-hash",
@@ -182,6 +197,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_MD5_HMAC] = {
 		.name = "qcom,md5-hmac",
@@ -189,6 +205,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA512_HASH] = {
 		.name = "qcom,sha512-hash",
@@ -196,6 +213,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA512_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA160_HMAC] = {
 		.name = "qcom,sha160-hmac",
@@ -203,6 +221,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA224_HMAC] = {
 		.name = "qcom,sha224-hmac",
@@ -210,6 +229,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA224_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA256_HMAC] = {
 		.name = "qcom,sha256-hmac",
@@ -217,6 +237,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA384_HMAC] = {
 		.name = "qcom,sha384-hmac",
@@ -224,6 +245,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_SHA512_HMAC] = {
 		.name = "qcom,sha512-hmac",
@@ -231,6 +253,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA512_BLOCK_SIZE,
 		.cipher_valid = false,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_GCM_GMAC] = {
 		.name = "qcom,aes128-gcm-gmac",
@@ -242,6 +265,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = 4,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_MD5_HMAC] = {
 		.name = "qcom,aes128-cbc-md5-hmac",
@@ -252,6 +276,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes128-cbc-sha160-hmac",
@@ -262,6 +287,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes128-cbc-sha256-hmac",
@@ -272,6 +298,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_MD5_HMAC] = {
 		.name = "qcom,aes128-ctr-md5-hmac",
@@ -283,6 +310,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA384_HMAC] = {
 		.name = "qcom,aes128-cbc-sha384-hmac",
@@ -293,6 +321,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CBC_SHA512_HMAC] = {
 		.name = "qcom,aes128-cbc-sha512-hmac",
@@ -303,6 +332,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA512_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes128-ctr-sha160-hmac",
@@ -314,6 +344,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes128-ctr-sha256-hmac",
@@ -325,6 +356,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA384_HMAC] = {
 		.name = "qcom,aes128-ctr-sha384-hmac",
@@ -336,6 +368,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES128_CTR_SHA512_HMAC] = {
 		.name = "qcom,aes128-ctr-sha512-hmac",
@@ -347,6 +380,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_GCM_GMAC] = {
 		.name = "qcom,aes192-gcm-gmac",
@@ -358,6 +392,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = 4,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_MD5_HMAC] = {
 		.name = "qcom,aes192-cbc-md5-hmac",
@@ -368,6 +403,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes192-cbc-sha160-hmac",
@@ -378,6 +414,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes192-cbc-sha256-hmac",
@@ -388,6 +425,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_MD5_HMAC] = {
 		.name = "qcom,aes192-ctr-md5-hmac",
@@ -399,6 +437,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA384_HMAC] = {
 		.name = "qcom,aes192-cbc-sha384-hmac",
@@ -409,6 +448,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CBC_SHA512_HMAC] = {
 		.name = "qcom,aes192-cbc-sha512-hmac",
@@ -419,6 +459,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA512_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes192-ctr-sha160-hmac",
@@ -430,6 +471,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes192-ctr-sha256-hmac",
@@ -441,6 +483,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA384_HMAC] = {
 		.name = "qcom,aes192-ctr-sha384-hmac",
@@ -452,6 +495,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES192_CTR_SHA512_HMAC] = {
 		.name = "qcom,aes192-ctr-sha512-hmac",
@@ -463,6 +507,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_GCM_GMAC] = {
 		.name = "qcom,aes256-gcm-gmac",
@@ -474,6 +519,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = false,
 		.nonce_sz = 4,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_MD5_HMAC] = {
 		.name = "qcom,aes256-cbc-md5-hmac",
@@ -484,6 +530,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA160_HMAC] = {
 		.name = "qcom,aes256-cbc-sha160-hmac",
@@ -494,6 +541,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA256_HMAC] = {
 		.name = "qcom,aes256-cbc-sha256-hmac",
@@ -504,6 +552,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_MD5_HMAC] = {
 		.name = "qcom,aes256-ctr-md5-hmac",
@@ -515,6 +564,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA384_HMAC] = {
 		.name = "qcom,aes256-cbc-sha384-hmac",
@@ -525,6 +575,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA384_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CBC_SHA512_HMAC] = {
 		.name = "qcom,aes256-cbc-sha512-hmac",
@@ -535,6 +586,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA512_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA160_HMAC] = {
 		.name = "qcom,aes256-ctr-sha160-hmac",
@@ -546,6 +598,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA256_HMAC] = {
 		.name = "qcom,aes256-ctr-sha256-hmac",
@@ -557,6 +610,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_MD5_HMAC] = {
 		.name = "qcom,3des-cbc-md5-hmac",
@@ -567,6 +621,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = MD5_HMAC_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA384_HMAC] = {
 		.name = "qcom,aes256-ctr-sha384-hmac",
@@ -578,6 +633,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_AES256_CTR_SHA512_HMAC] = {
 		.name = "qcom,aes256-ctr-sha512-hmac",
@@ -589,6 +645,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.cipher_valid = true,
 		.auth_valid = true,
 		.nonce_sz = CTR_RFC3686_NONCE_SIZE,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA160_HMAC] = {
 		.name = "qcom,3des-cbc-sha160-hmac",
@@ -599,6 +656,7 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA1_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 	[NSS_CRYPTO_CMN_ALGO_3DES_CBC_SHA256_HMAC] = {
 		.name = "qcom,3des-cbc-sha256-hmac",
@@ -609,8 +667,19 @@ static struct nss_crypto_algo_info g_algo_info[NSS_CRYPTO_CMN_ALGO_MAX] = {
 		.auth_blk_len = SHA256_BLOCK_SIZE,
 		.cipher_valid = true,
 		.auth_valid = true,
+		.is_supp = false,
 	},
 };
+
+/*
+ * nss_crypto_algo_is_supp
+ *	Check if the algo is supported by the HW
+ */
+bool nss_crypto_algo_is_supp(uint32_t algo)
+{
+	return g_algo_info[algo].is_supp;
+}
+EXPORT_SYMBOL(nss_crypto_algo_is_supp);
 
 /*
  * nss_crypto_ctrl_stats_init
@@ -1232,8 +1301,16 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	 * we need to map and mark the algorithms suggested by DTSI
 	 * and supported by the driver
 	 */
-	for (i = 0, info = g_algo_info; i < ARRAY_SIZE(g_algo_info); i++, info++)
-		node->algo[i] = info->name ? of_property_read_bool(np, info->name) : false;
+	for (i = 0, info = g_algo_info; i < ARRAY_SIZE(g_algo_info); i++, info++) {
+		if (info->name && of_property_read_bool(np, info->name)) {
+			node->algo[i] = info->is_supp = true;
+			nss_crypto_info("node_init: %s is supported in HW\n", info->name);
+			continue;
+		}
+
+		node->algo[i] = false;
+		nss_crypto_info("node_init: %s is not supported in HW\n", info->name);
+	}
 
 	/*
 	 * This is a synchronous message; hence there is nothing to callback

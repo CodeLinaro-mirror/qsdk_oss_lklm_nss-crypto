@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2020 The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -46,6 +46,7 @@ struct nss_crypto_algo_info {
 	uint16_t nonce_sz;			/* nonce size */
 	bool cipher_valid;			/* algorithm supports cipher mode */
 	bool auth_valid;			/* algorithm supports auth mode */
+	bool is_supp;				/* algorithm is supported by HW */
 };
 
 /*
