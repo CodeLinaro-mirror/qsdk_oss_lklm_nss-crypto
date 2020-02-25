@@ -844,7 +844,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 */
 	*session = U16_MAX;
 
-	if (data->algo > NSS_CRYPTO_CMN_ALGO_MAX) {
+	if (data->algo >= NSS_CRYPTO_CMN_ALGO_MAX) {
 		nss_crypto_warn("%p: invalid configuration (algo - %d)\n", user, data->algo);
 		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
 		return -ERANGE;
