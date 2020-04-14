@@ -761,14 +761,15 @@ EXPORT_SYMBOL(nss_crypto_ctx_free);
  */
 void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 {
+	uint32_t *msg_stats = (uint32_t *)&nim->msg.stats;
 	struct nss_crypto_ctrl *ctrl = &g_control;
-	struct nss_crypto_cmn_stats *stats;
 	struct nss_crypto_node *node;
 	struct nss_crypto_ctx *ctx;
 	bool process = false;
+	uint64_t *stats;
 	uint16_t idx;
+	int num;
 
-	stats = &nim->msg.stats;
 
 	/*
 	 * find the node associated with message
@@ -793,17 +794,25 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 
 	switch (nim->cm.type) {
 	case NSS_CRYPTO_CMN_MSG_TYPE_SYNC_NODE_STATS:
-		memcpy(&node->stats, stats, sizeof(node->stats));
+		stats = (uint64_t *)&node->stats;
+
+		for (num = 0; num < sizeof(node->stats)/sizeof(*stats); num++) {
+			stats[num] += msg_stats[num];
+		}
+
 		break;
 
 	case NSS_CRYPTO_CMN_MSG_TYPE_SYNC_CTX_STATS:
 		idx = NSS_CRYPTO_SESSION_INDEX(nim->uid, ctrl->max_contexts);
-
 		ctx = &ctrl->ctx_tbl[idx];
 		if (!kref_get_unless_zero(&ctx->ref))
 			break;
 
-		memcpy(&ctx->stats, stats, sizeof(ctx->stats));
+		stats = (uint64_t *)&ctx->stats;
+		for (num = 0; num < sizeof(ctx->stats)/sizeof(*stats); num++) {
+			stats[num] += msg_stats[num];
+		}
+
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
 		break;
 

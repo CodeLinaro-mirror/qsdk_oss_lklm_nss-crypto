@@ -50,6 +50,23 @@ struct nss_crypto_algo_info {
 };
 
 /*
+ * nss_crypto_stats_pvt
+ *	Statistics message applicable for node/engine/context.
+ */
+struct nss_crypto_stats_pvt {
+	uint64_t rx_packets;                    /* Number of packets received. */
+	uint64_t rx_bytes;                      /* Number of bytes received. */
+	uint64_t tx_packets;                    /* Number of packets transmitted. */
+	uint64_t tx_bytes;                      /* Number of bytes transmitted. */
+	uint64_t rx_dropped[NSS_MAX_NUM_PRI];   /* Packets dropped on receive due to queue full. */
+
+	uint64_t fail_version;			/* Version mismatch failures. */
+	uint64_t fail_ctx;			/* Context related failures. */
+	uint64_t fail_dma;			/* DMA descriptor full. */
+};
+
+
+/*
  * nss_crypto_ctx
  *	context class
  */
@@ -61,7 +78,7 @@ struct nss_crypto_ctx {
 	void *hw_info;				/* HW specific info */
 
 	struct dentry *dentry;			/* debugfs entry for context stats */
-	struct nss_crypto_cmn_stats stats;	/* Context stats */
+	struct nss_crypto_stats_pvt stats;	/* Context stats */
 
 	struct nss_crypto_cmn_msg nim;		/* crypto context message */
 	struct delayed_work free_work;		/* crypto context free worker */
@@ -139,7 +156,7 @@ struct nss_crypto_node {
 	struct dentry *dentry;			/* entry for node stats */
 	struct net_device *ndev;		/* netdevice associated with node */
 	struct device *dev;			/* platform device associated with node */
-	struct nss_crypto_cmn_stats stats;	/* Node stats */
+	struct nss_crypto_stats_pvt stats;	/* Node stats */
 
 	bool tx_enabled;			/* transform is enabled from host */
 	bool algo[NSS_CRYPTO_CMN_ALGO_MAX];	/* Algorithm support table */
