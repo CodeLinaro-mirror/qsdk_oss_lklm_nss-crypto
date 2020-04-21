@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2017-2018, 2020, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -79,6 +79,10 @@ struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32
 	}
 
 	skb = __skb_dequeue(&user->sk_head);
+	/*
+	 * Set skb->queue_mapping to the core on which this transformation is scheduled.
+	 */
+	skb_set_queue_mapping(skb, smp_processor_id());
 	spin_unlock_bh(&user->lock);
 
 	ch = (struct nss_crypto_hdr *)skb_put(skb, size);
