@@ -273,7 +273,7 @@ int nss_crypto_ce5_engine_init(struct platform_device *pdev, struct resource *cr
 	 */
 	eng = nss_crypto_engine_alloc(pdev);
 	if (!eng) {
-		nss_crypto_warn("%p: unable to allocate engine\n", node);
+		nss_crypto_warn("%px: unable to allocate engine\n", node);
 		return -ENOMEM;
 	}
 
@@ -283,7 +283,7 @@ int nss_crypto_ce5_engine_init(struct platform_device *pdev, struct resource *cr
 	eng->crypto_paddr = crypto_res->start;
 	eng->crypto_vaddr = ioremap_nocache(crypto_res->start, resource_size(crypto_res));
 	if (!eng->crypto_vaddr) {
-		nss_crypto_warn("%p: unable to remap crypto_addr(0x%p)\n", node, (void *)eng->crypto_paddr);
+		nss_crypto_warn("%px: unable to remap crypto_addr(0x%px)\n", node, (void *)eng->crypto_paddr);
 		nss_crypto_engine_free(eng);
 		return -EIO;
 	}
@@ -295,7 +295,7 @@ int nss_crypto_ce5_engine_init(struct platform_device *pdev, struct resource *cr
 	eng->dma_vaddr = ioremap_nocache(bam_res->start, resource_size(bam_res));
 	if (!eng->dma_vaddr) {
 		iounmap(eng->crypto_vaddr);
-		nss_crypto_warn("%p: unable to remap dma_addr(0x%p)\n", node, (void *)eng->dma_paddr);
+		nss_crypto_warn("%px: unable to remap dma_addr(0x%px)\n", node, (void *)eng->dma_paddr);
 		nss_crypto_engine_free(eng);
 		return -EIO;
 	}
@@ -307,7 +307,7 @@ int nss_crypto_ce5_engine_init(struct platform_device *pdev, struct resource *cr
 	if (status < 0) {
 		iounmap(eng->dma_vaddr);
 		iounmap(eng->crypto_vaddr);
-		nss_crypto_warn("%p: unable to initialize engine(%d),status(%d)", node, eng->id, status);
+		nss_crypto_warn("%px: unable to initialize engine(%d),status(%d)", node, eng->id, status);
 		nss_crypto_engine_free(eng);
 		return status;
 	}
@@ -330,7 +330,7 @@ int nss_crypto_ce5_node_init(struct platform_device *pdev, const char *name)
 	 */
 	node = nss_crypto_node_alloc(pdev, NSS_CRYPTO_CMN_INTERFACE, name);
 	if (!node) {
-		nss_crypto_warn("%p: unable to allocate %s node\n", np, name);
+		nss_crypto_warn("%px: unable to allocate %s node\n", np, name);
 		return -ENOMEM;
 	}
 
@@ -338,7 +338,7 @@ int nss_crypto_ce5_node_init(struct platform_device *pdev, const char *name)
 
 	status = nss_crypto_node_init(node, np);
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to initialize the node, status(%d)\n", np, status);
+		nss_crypto_warn("%px: unable to initialize the node, status(%d)\n", np, status);
 		nss_crypto_node_free(node);
 		return status;
 	}
@@ -369,7 +369,7 @@ int nss_crypto_ce5_init(struct platform_device *pdev)
 	 */
 	status = nss_crypto_ce5_node_init(pdev, "ce5v5");
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to initialize node, status(%d)\n", pdev, status);
+		nss_crypto_warn("%px: unable to initialize node, status(%d)\n", pdev, status);
 		return status;
 	}
 
@@ -377,7 +377,7 @@ int nss_crypto_ce5_init(struct platform_device *pdev)
 	 * Crypto Registers resource
 	 */
 	if (of_address_to_resource(np, 0, &crypto_res) != 0) {
-		nss_crypto_warn("%p: unable to read crypto resource in %s\n", np, np->full_name);
+		nss_crypto_warn("%px: unable to read crypto resource in %s\n", np, np->full_name);
 		return -EINVAL;
 	}
 
@@ -385,7 +385,7 @@ int nss_crypto_ce5_init(struct platform_device *pdev)
 	 * BAM Registers resource
 	 */
 	if (of_address_to_resource(np, 1, &bam_res) != 0) {
-		nss_crypto_warn("%p: unable to read bam resource in %s\n", np, np->full_name);
+		nss_crypto_warn("%px: unable to read bam resource in %s\n", np, np->full_name);
 		return -EINVAL;
 	}
 
@@ -395,7 +395,7 @@ int nss_crypto_ce5_init(struct platform_device *pdev)
 	for_each_child_of_node(np, child) {
 		status = nss_crypto_ce5_engine_init(pdev, &crypto_res, &bam_res, eng_id);
 		if (status < 0) {
-			nss_crypto_warn("%p: unable to initialize engine, status(%d)\n", child, status);
+			nss_crypto_warn("%px: unable to initialize engine, status(%d)\n", child, status);
 			break;
 		}
 

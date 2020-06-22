@@ -428,19 +428,19 @@ static int nss_crypto_eip197_clock_init(struct platform_device *pdev)
 
 		clk = devm_clk_get(&pdev->dev, clk_string);
 		if (IS_ERR(clk)) {
-			nss_crypto_err("%p: cannot get crypto clock: %s\n", &pdev->dev, clk_string);
+			nss_crypto_err("%px: cannot get crypto clock: %s\n", &pdev->dev, clk_string);
 			status = -ENOENT;
 			goto free;
 		}
 
 		if (clk_set_rate(clk, clk_rate[i])) {
-			nss_crypto_err("%p: cannot set %llx freq for %s\n", &pdev->dev, clk_rate[i], clk_string);
+			nss_crypto_err("%px: cannot set %llx freq for %s\n", &pdev->dev, clk_rate[i], clk_string);
 			status = -EINVAL;
 			goto free;
 		}
 
 		if (clk_prepare_enable(clk)) {
-			nss_crypto_err("%p: cannot enable clock: %s\n", &pdev->dev, clk_string);
+			nss_crypto_err("%px: cannot enable clock: %s\n", &pdev->dev, clk_string);
 			status = -EFAULT;
 			goto free;
 		}
@@ -492,7 +492,7 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 	paddr = res->start + offset;
 	vaddr = ioremap_nocache(paddr, resource_size(res));
 	if (!vaddr) {
-		nss_crypto_warn("%p: unable to remap crypto_addr(0x%p)\n", node, (void *)paddr);
+		nss_crypto_warn("%px: unable to remap crypto_addr(0x%px)\n", node, (void *)paddr);
 		return -EIO;
 	}
 
@@ -501,7 +501,7 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 	 */
 	eng = nss_crypto_engine_alloc(pdev);
 	if (!eng) {
-		nss_crypto_warn("%p: unable to allocate engine\n", node);
+		nss_crypto_warn("%px: unable to allocate engine\n", node);
 		iounmap(vaddr);
 		return -ENOMEM;
 	}
@@ -532,7 +532,7 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 
 	status = nss_crypto_engine_init(node, eng);
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to initialize engine(%d),status(%d)",
+		nss_crypto_warn("%px: unable to initialize engine(%d),status(%d)",
 				node, eng->id, status);
 		nss_crypto_engine_free(eng);
 		return status;
@@ -556,7 +556,7 @@ int nss_crypto_eip197_node_init(struct platform_device *pdev, const char *name)
 	 */
 	node = nss_crypto_node_alloc(pdev, NSS_CRYPTO_CMN_INTERFACE, name);
 	if (!node) {
-		nss_crypto_warn("%p: unable to allocate %s node\n", np, name);
+		nss_crypto_warn("%px: unable to allocate %s node\n", np, name);
 		return -ENOMEM;
 	}
 
@@ -564,7 +564,7 @@ int nss_crypto_eip197_node_init(struct platform_device *pdev, const char *name)
 
 	status = nss_crypto_node_init(node, np);
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to initialize the node, status(%d)\n", np, status);
+		nss_crypto_warn("%px: unable to initialize the node, status(%d)\n", np, status);
 		nss_crypto_node_free(node);
 		return status;
 	}
@@ -587,7 +587,7 @@ int nss_crypto_eip197_init(struct platform_device *pdev)
 
 	status = nss_crypto_eip197_clock_init(pdev);
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to intialize clock, status(%d)\n", pdev, status);
+		nss_crypto_warn("%px: unable to intialize clock, status(%d)\n", pdev, status);
 		return status;
 	}
 
@@ -595,7 +595,7 @@ int nss_crypto_eip197_init(struct platform_device *pdev)
 	 * Crypto Registers resource
 	 */
 	if (of_address_to_resource(np, 0, &crypto_res) != 0) {
-		nss_crypto_warn("%p: unable to read crypto resource\n", np);
+		nss_crypto_warn("%px: unable to read crypto resource\n", np);
 		return -EINVAL;
 	}
 
@@ -604,19 +604,19 @@ int nss_crypto_eip197_init(struct platform_device *pdev)
 	 */
 	status = nss_crypto_eip197_node_init(pdev, "eip197v1");
 	if (status < 0) {
-		nss_crypto_warn("%p: unable to intialize node, status(%d)\n", pdev, status);
+		nss_crypto_warn("%px: unable to intialize node, status(%d)\n", pdev, status);
 		return status;
 	}
 
 	for_each_child_of_node(np, child) {
 		if (of_property_read_u32(child, "reg_offset", &reg_offset) < 0) {
-			nss_crypto_warn("%p: unable to read reg_offset\n", child);
+			nss_crypto_warn("%px: unable to read reg_offset\n", child);
 			continue;
 		}
 
 		status = nss_crypto_eip197_engine_init(pdev, child, &crypto_res, reg_offset);
 		if (status < 0) {
-			nss_crypto_warn("%p: unable to intialize engine, status(%d)\n",
+			nss_crypto_warn("%px: unable to intialize engine, status(%d)\n",
 					child, status);
 			break;
 		}

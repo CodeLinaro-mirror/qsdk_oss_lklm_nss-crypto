@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013,2015-2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013,2015-2017, 2020, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -241,7 +241,7 @@ void nss_crypto_delayed_init(struct work_struct *work)
 	 * If crypto probe has failed, no need for further initialization
 	 */
 	if (nss_crypto_check_state(ctrl, NSS_CRYPTO_STATE_NOT_READY)) {
-		nss_crypto_warn("%p:NSS Crypto probe failed, num_eng (%d)\n", ctrl, gbl_crypto_ctrl.num_eng);
+		nss_crypto_warn("%px:NSS Crypto probe failed, num_eng (%d)\n", ctrl, gbl_crypto_ctrl.num_eng);
 		return;
 	}
 

@@ -770,7 +770,6 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 	uint16_t idx;
 	int num;
 
-
 	/*
 	 * find the node associated with message
 	 */
@@ -817,7 +816,7 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_cmn_msg *nim)
 		break;
 
 	default:
-		nss_crypto_warn("%p: unsupported message (%d), uid (%d)\n", node, nim->cm.type, nim->uid);
+		nss_crypto_warn("%px: unsupported message (%d), uid (%d)\n", node, nim->cm.type, nim->uid);
 		break;
 	}
 }
@@ -852,7 +851,7 @@ void nss_crypto_free(struct nss_crypto_ctx *ctx)
 
 	default:
 		atomic_inc(&ctrl->cstats.free_fail_msg);
-		nss_crypto_warn("%p: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
+		nss_crypto_warn("%px: Failed to send crypto session(%d) deletion msg\n", ctx, ctx->idx);
 		goto free;
 	}
 
@@ -923,7 +922,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	*session = U16_MAX;
 
 	if (data->algo >= NSS_CRYPTO_CMN_ALGO_MAX) {
-		nss_crypto_warn("%p: invalid configuration (algo - %d)\n", user, data->algo);
+		nss_crypto_warn("%px: invalid configuration (algo - %d)\n", user, data->algo);
 		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
 		return -ERANGE;
 	}
@@ -1056,7 +1055,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 */
 	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &nim);
 	if (status != NSS_TX_SUCCESS) {
-		nss_crypto_warn("%p: unable to send(%d), status(%d), response(%d), error(%d)\n",
+		nss_crypto_warn("%px: unable to send(%d), status(%d), response(%d), error(%d)\n",
 				ctx, nim.cm.type, status, nim.cm.response, nim.cm.error);
 		atomic_inc(&ctrl->cstats.alloc_fail_noresp);
 		kref_put(&ctx->ref, nss_crypto_ctx_free);
@@ -1095,7 +1094,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	uint16_t idx;
 
 	if (session >= ctrl->max_contexts) {
-		nss_crypto_warn("%p: Invalid session id=%d (max= %d)\n", user, session, ctrl->max_contexts);
+		nss_crypto_warn("%px: Invalid session id=%d (max= %d)\n", user, session, ctrl->max_contexts);
 		return;
 	}
 
@@ -1105,7 +1104,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	ctx = &ctrl->ctx_tbl[idx];
 	if (!kref_get_unless_zero(&ctx->ref)) {
 		mutex_unlock(&ctrl->mutex);
-		nss_crypto_warn("%p: session id(%d) not in use\n", user, idx);
+		nss_crypto_warn("%px: session id(%d) not in use\n", user, idx);
 		return;
 	}
 
@@ -1119,7 +1118,7 @@ void nss_crypto_session_free(struct nss_crypto_user *user, uint32_t session)
 	 * Free is deferred if the call is in non-sleepable context
 	 */
 	if (in_atomic()) {
-		nss_crypto_info("%p: session free for idx(%d) is deferred\n", user, idx);
+		nss_crypto_info("%px: session free for idx(%d) is deferred\n", user, idx);
 		schedule_delayed_work(&ctx->free_work, NSS_CRYPTO_DELAYED_FREE_TICKS);
 		return;
 	}
@@ -1154,7 +1153,7 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 
 	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &nim);
 	if (status != NSS_TX_SUCCESS) {
-		nss_crypto_warn("%p: unable to send(%d), status(%d), response(%d), error(%d)\n",
+		nss_crypto_warn("%px: unable to send(%d), status(%d), response(%d), error(%d)\n",
 			node, nim.cm.type, status, nim.cm.response, nim.cm.error);
 		return (status == NSS_TX_FAILURE_QUEUE) ? -EBUSY : -ENODEV;
 	}
@@ -1180,7 +1179,7 @@ int nss_crypto_engine_init(struct nss_crypto_node *node, struct nss_crypto_engin
 
 		status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &nim);
 		if (status != NSS_TX_SUCCESS) {
-			nss_crypto_warn("%p: unable to send(%d), status(%d), rsp(%d), error(%d)\n",
+			nss_crypto_warn("%px: unable to send(%d), status(%d), rsp(%d), error(%d)\n",
 					node, nim.cm.type, status, nim.cm.response, nim.cm.error);
 			continue;
 		}
@@ -1239,7 +1238,7 @@ void nss_crypto_engine_free(struct nss_crypto_engine *eng)
  */
 void nss_crypto_ndev_setup(struct net_device *dev)
 {
-	nss_crypto_info("%p: dummy netdevice for crypto\n", dev);
+	nss_crypto_info("%px: dummy netdevice for crypto\n", dev);
 }
 
 /*
@@ -1256,7 +1255,7 @@ struct nss_crypto_node *nss_crypto_node_alloc(struct platform_device *pdev, uint
 	 */
 	ndev = alloc_netdev(sizeof(struct nss_crypto_node), name, NET_NAME_UNKNOWN, nss_crypto_ndev_setup);
 	if (!ndev) {
-		nss_crypto_warn("%p: unable to allocate node\n", pdev);
+		nss_crypto_warn("%px: unable to allocate node\n", pdev);
 		return NULL;
 	}
 
@@ -1300,7 +1299,7 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 	 * read maximum DMA rings
 	 */
 	if (of_property_read_u32(np, "qcom,dma-mask", &node->dma_mask) < 0) {
-		nss_crypto_warn("%p: unable to read node DMA mask\n", np);
+		nss_crypto_warn("%px: unable to read node DMA mask\n", np);
 		return -ENOENT;
 	}
 
@@ -1333,7 +1332,7 @@ int nss_crypto_node_init(struct nss_crypto_node *node, struct device_node *np)
 
 	status = nss_crypto_cmn_tx_msg_sync(ctrl->nss_msg_hdl, &nim);
 	if (status != NSS_TX_SUCCESS) {
-		nss_crypto_warn("%p: unable to send(%d), status(%d), response(%d), error(%d)\n",
+		nss_crypto_warn("%px: unable to send(%d), status(%d), response(%d), error(%d)\n",
 				node, nim.cm.type, status, nim.cm.response, nim.cm.error);
 		return (status == NSS_TX_FAILURE_QUEUE) ? -EBUSY : -ENODEV;
 	}
@@ -1419,7 +1418,7 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 		return NULL;
 
 	if (!ctx->attach || !ctx->detach) {
-		nss_crypto_warn("%p: callbacks missing\n", ctx);
+		nss_crypto_warn("%px: callbacks missing\n", ctx);
 		return NULL;
 	}
 
@@ -1427,13 +1426,13 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 	default_hdr_sz = ctx->default_hdr_sz;
 
 	if (!hdr_pool_sz || !default_hdr_sz) {
-		nss_crypto_warn("%p: pool_sz and hdr_sz missing\n", ctx);
+		nss_crypto_warn("%px: pool_sz and hdr_sz missing\n", ctx);
 		return NULL;
 	}
 
 	user = vzalloc(sizeof(struct nss_crypto_user));
 	if (!user) {
-		nss_crypto_warn("%p: unable to allocate user\n", ctx);
+		nss_crypto_warn("%px: unable to allocate user\n", ctx);
 		return NULL;
 	}
 
@@ -1454,7 +1453,7 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 	 */
 	skb = alloc_skb(aligned_size, GFP_KERNEL);
 	if (!skb) {
-		nss_crypto_warn("%p:unable to allocate atleast 1 skb\n", ctx);
+		nss_crypto_warn("%px:unable to allocate atleast 1 skb\n", ctx);
 		vfree(user);
 		return NULL;
 	}
@@ -1491,7 +1490,7 @@ struct nss_crypto_user *nss_crypto_register_user(struct nss_crypto_user_ctx *ctx
 		__skb_queue_head(&user->sk_head, skb);
 	}
 
-	nss_crypto_info("%p: registered user(%s), pool size(%d)\n", user, ctx->name, num_skb);
+	nss_crypto_info("%px: registered user(%s), pool size(%d)\n", user, ctx->name, num_skb);
 
 	/*
 	 * We only register ourselves for a pending attach if the
@@ -1603,7 +1602,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	np = of_node_get(pdev->dev.of_node);
 
 	if (of_property_read_u32(np, "qcom,max-contexts", &ctrl->max_contexts) < 0) {
-		nss_crypto_err("%p: max session undefined\n", pdev);
+		nss_crypto_err("%px: max session undefined\n", pdev);
 		return -EINVAL;
 	}
 
@@ -1617,19 +1616,19 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	ctrl->max_contexts = (uint32_t)max_contexts;
 
 	if (!ctrl->max_contexts) {
-		nss_crypto_warn("%p: Empty context\n", np);
+		nss_crypto_warn("%px: Empty context\n", np);
 		return -ENOSPC;
 	}
 
 	if (of_property_read_u32(np, "qcom,max-context-size", &ctrl->max_ctx_size) < 0) {
-		nss_crypto_err("%p: max session undefined\n", pdev);
+		nss_crypto_err("%px: max session undefined\n", pdev);
 		return -EINVAL;
 	}
 
 	ctx_tbl_sz = ctrl->max_contexts * sizeof(struct nss_crypto_ctx);
 	ctrl->ctx_tbl = vzalloc(ctx_tbl_sz);
 	if (!ctrl->ctx_tbl) {
-		nss_crypto_err("%p: context table allocation fails\n", pdev);
+		nss_crypto_err("%px: context table allocation fails\n", pdev);
 		return -ENOMEM;
 	}
 
@@ -1702,12 +1701,12 @@ void nss_crypto_delayed_probe(struct work_struct *work)
 	}
 
 	if (platform_driver_register(&nss_crypto_drv)) {
-		nss_crypto_warn("%p: unable to register the driver\n", ctrl);
+		nss_crypto_warn("%px: unable to register the driver\n", ctrl);
 		return;
 	}
 
 	if (platform_driver_register(&nss_crypto_device)) {
-		nss_crypto_warn("%p: unable to register the device\n", ctrl);
+		nss_crypto_warn("%px: unable to register the device\n", ctrl);
 		return;
 	}
 

@@ -139,7 +139,7 @@ void nss_crypto_debugfs_add_engine(struct nss_crypto_engine *eng, struct dentry 
 	int i = 0;
 
 	if (!root) {
-		nss_crypto_warn("%p: no root debugfs entry found\n", eng);
+		nss_crypto_warn("%px: no root debugfs entry found\n", eng);
 		return;
 	}
 
@@ -147,7 +147,7 @@ void nss_crypto_debugfs_add_engine(struct nss_crypto_engine *eng, struct dentry 
 
 	eng->dentry = debugfs_create_dir(buf, root);
 	if (!eng->dentry) {
-		nss_crypto_warn("%p: failed to create engine debugfs dentry\n", eng);
+		nss_crypto_warn("%px: failed to create engine debugfs dentry\n", eng);
 		return;
 	}
 
