@@ -688,7 +688,7 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	sg_init_one(&src, op->data_vaddr, op->data_len + icv_len);
 	num_frag = sg_nents(&src);
 
-	ch = nss_crypto_hdr_alloc(crypto_hdl, crypto_sid[curr_sid], num_frag, iv_len, icv_len, ahash);
+	ch = nss_crypto_hdr_alloc(crypto_hdl, crypto_sid[curr_sid], num_frag, num_frag, iv_len, icv_len, ahash);
 	if (ch == NULL) {
 		crypto_bench_error("UNABLE TO ALLOCATE CRYPTO BUFFER\n");
 		return CRYPTO_BENCH_NOT_OK;
@@ -697,7 +697,7 @@ static int32_t crypto_bench_prep_buf(struct crypto_op *op)
 	nss_crypto_hdr_set_skip(ch, op->cipher_skip);
 	nss_crypto_hdr_set_op(ch, op->op_dir);
 
-	nss_crypto_hdr_map_sglist(ch, &src, icv_len);
+	nss_crypto_hdr_map_sglist(ch, &src, &src, (uint16_t)op->data_len, (uint16_t)op->data_len + icv_len, true);
 
 	fixed_size = 2 * ch->in_frags * sizeof(struct nss_crypto_frag) + sizeof(struct nss_crypto_hdr);
 	tot_len = ch->iv_len + ch->hmac_len + ch->buf_len + ch->priv_len + fixed_size;
