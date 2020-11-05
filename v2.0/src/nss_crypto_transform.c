@@ -106,6 +106,7 @@ struct nss_crypto_hdr *nss_crypto_hdr_alloc(struct nss_crypto_user *user, uint32
 	ch->buf_start = ch->iv_start + iv_len;
 	ch->hmac_start = ch->buf_start + sizeof(struct nss_crypto_buf);
 	ch->priv_start = ch->hmac_start + hmac_len;
+	ch->auth_end = 0;
 
 	/*
 	 * we need to store SKB in buf->skb
