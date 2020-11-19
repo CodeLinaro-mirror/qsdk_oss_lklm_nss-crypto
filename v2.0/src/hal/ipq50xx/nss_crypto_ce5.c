@@ -237,6 +237,7 @@ int nss_crypto_ce5_ctx_fill(struct nss_crypto_ctx *ctx, struct nss_crypto_sessio
 {
 	struct nss_crypto_ce5_ctx_ctrl *ctx_ctrl;
 	int i;
+	uint32_t min_size;
 
 	if (data->algo > NSS_CRYPTO_CMN_ALGO_MAX)
 		return -EINVAL;
@@ -247,9 +248,15 @@ int nss_crypto_ce5_ctx_fill(struct nss_crypto_ctx *ctx, struct nss_crypto_sessio
 	ctx->hw_info = ctx_ctrl = &g_ctx_info[data->algo];
 
 	/*
+	 * Find the minimum between the size of crypto context control
+	 * words and message spare words.
+	 */
+	min_size = min(ARRAY_SIZE(ctx_ctrl->ctrl), ARRAY_SIZE(msg->spare));
+
+	/*
 	 * Fill the spare words with config0, encr_seg_cfg & auth_seg_cfg and mark the availability in flags
 	 */
-	for (i = 0; i < ARRAY_SIZE(msg->spare); i++) {
+	for (i = 0; i < min_size; i++) {
 		msg->spare[i] = ctx_ctrl->ctrl[i];
 		msg->flags |= (NSS_CRYPTO_CMN_CTX_FLAGS_SPARE0 << i);
 	}
