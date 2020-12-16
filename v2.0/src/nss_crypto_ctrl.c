@@ -919,7 +919,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 	 * Incase of failure to alloc crypto session in FW, free function see
 	 * this big value and return;
 	 */
-	*session = U16_MAX;
+	*session = NSS_CRYPTO_SESSION_MAX;
 
 	if (data->algo >= NSS_CRYPTO_CMN_ALGO_MAX) {
 		nss_crypto_warn("%px: invalid configuration (algo - %d)\n", user, data->algo);
