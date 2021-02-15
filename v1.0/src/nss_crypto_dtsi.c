@@ -1,4 +1,4 @@
-/* Copyright (c) 2013, 2015-2017, 2020 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013, 2015-2017, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -296,6 +296,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 	}
 
 	eng_ptr = gbl_crypto_ctrl.eng;
+	xchg(&gbl_crypto_ctrl.eng, NULL);
 	old_sz = (gbl_crypto_ctrl.num_eng * sizeof(struct nss_crypto_ctrl_eng));
 	new_sz = old_sz + sizeof(struct nss_crypto_ctrl_eng);
 
@@ -304,7 +305,7 @@ static int nss_crypto_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
-	gbl_crypto_ctrl.eng = eng_ptr;
+	xchg(&gbl_crypto_ctrl.eng, eng_ptr);
 
 	e_ctrl = &gbl_crypto_ctrl.eng[eng_count];
 	e_ctrl->dev = &pdev->dev;

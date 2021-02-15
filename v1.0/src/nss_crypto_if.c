@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017, 2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2017, 2020-2021, The Linux Foundation. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -418,6 +418,10 @@ void nss_crypto_process_event(void *app_data, struct nss_crypto_msg *nim)
 		stats = &nim->msg.stats;
 
 		for (i = 0; i < ctrl->num_eng; i++) {
+			if (!ctrl->eng) {
+				return;
+			}
+
 			e_ctrl = &ctrl->eng[i];
 			nss_crypto_copy_stats(&e_ctrl->stats, &stats->eng_stats[i]);
 		}
