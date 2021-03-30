@@ -6,7 +6,7 @@ NSS_CRYPTO_MOD_NAME=qca-nss-crypto
 
 #ccflags-y += -DNSS_CRYPTO_DBG
 ccflags-y += -DNSS_CRYPTO_DEBUG_LEVEL=2
-ccflags-y += -Werror
+ccflags-y += -Wall -Werror
 ccflags-y += -DNSS_CRYPTO_BUILD_ID=\"'Build_ID - $(shell date +'%m/%d/%y, %H:%M:%S') SoC=$(SoC)'\"
 
 ifneq (, $(findstring ipq807x, $(SoC)))
