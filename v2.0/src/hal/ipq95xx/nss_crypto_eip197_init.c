@@ -812,6 +812,18 @@ static void nss_crypto_eip197_hw_boot_ipue(struct device *dev, void __iomem *bas
 }
 
 /*
+ * nss_crypto_eip197_hw_disable_ecn_check()
+ *	Disable ECN check for IPsec processing.
+ */
+static void nss_crypto_eip197_hw_disable_ecn_check(void __iomem *base_addr)
+{
+	iowrite32(NSS_CRYPTO_EIP197_PE_EIP96_ECN_DISABLE, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_ECN_TABLE(0));
+	iowrite32(NSS_CRYPTO_EIP197_PE_EIP96_ECN_DISABLE, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_ECN_TABLE(1));
+	iowrite32(NSS_CRYPTO_EIP197_PE_EIP96_ECN_DISABLE, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_ECN_TABLE(2));
+	iowrite32(NSS_CRYPTO_EIP197_PE_EIP96_ECN_DISABLE, base_addr + NSS_CRYPTO_EIP197_PE_EIP96_ECN_TABLE(3));
+}
+
+/*
  * nss_crypto_eip197_hw_setup()
  *	Pre initialization function for eip197
  */
@@ -867,6 +879,8 @@ void nss_crypto_eip197_hw_init(struct platform_device *pdev, struct device_node 
 
 	if (of_property_read_bool(np, "qcom,opue-enabled"))
 		nss_crypto_eip197_hw_boot_opue(&pdev->dev, base_addr, "opue.bin");
+
+	nss_crypto_eip197_hw_disable_ecn_check(base_addr);
 
 	/*
 	 * Allow passing 16 bytes of metadata information from
