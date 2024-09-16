@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -38,7 +39,14 @@
 #include <linux/debugfs.h>
 #include <linux/log2.h>
 #include <linux/completion.h>
+#include <linux/version.h>
+#include <linux/of.h>
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 #include <crypto/sha.h>
+#else
+#include <crypto/sha1.h>
+#include <crypto/sha2.h>
+#endif
 #include <crypto/des.h>
 #include <crypto/aes.h>
 #include <crypto/md5.h>
