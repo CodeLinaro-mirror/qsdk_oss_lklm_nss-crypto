@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013, 2016-2017, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -55,8 +56,13 @@
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/vmalloc.h>
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 #include <linux/cryptohash.h>
 #include <crypto/sha.h>
+#else
+#include <crypto/sha1.h>
+#include <crypto/sha2.h>
+#endif
 #include <crypto/aes.h>
 #include <crypto/des.h>
 #include <crypto/ghash.h>

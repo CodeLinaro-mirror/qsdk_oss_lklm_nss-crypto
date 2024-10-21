@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022,2024 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -491,7 +491,11 @@ int nss_crypto_eip197_engine_init(struct platform_device *pdev, struct device_no
 	 * remap the I/O addresses
 	 */
 	paddr = res->start + offset;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 6, 0))
 	vaddr = ioremap_nocache(paddr, resource_size(res));
+#else
+	vaddr = ioremap(paddr, resource_size(res));
+#endif
 	if (!vaddr) {
 		nss_crypto_warn("%px: unable to remap crypto_addr(0x%px)\n", node, (void *)paddr);
 		return -EIO;
