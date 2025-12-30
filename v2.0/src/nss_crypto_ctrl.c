@@ -988,6 +988,7 @@ int nss_crypto_session_alloc(struct nss_crypto_user *user, struct nss_crypto_ses
 
 	if (!found) {
 		atomic_inc(&ctrl->cstats.alloc_fail_noalgo);
+		kref_put(&ctx->ref, nss_crypto_ctx_free);
 		return -ENOENT;
 	}
 
